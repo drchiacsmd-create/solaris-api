@@ -1,0 +1,931 @@
+{
+  "id": "2d919500-9a21-440c-900a-d4f08fca1d41",
+  "prevId": "00000000-0000-0000-0000-000000000000",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.appointments": {
+      "name": "appointments",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "memberId": {
+          "name": "memberId",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "packageId": {
+          "name": "packageId",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "packageName": {
+          "name": "packageName",
+          "type": "varchar(200)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "clinicId": {
+          "name": "clinicId",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "clinicName": {
+          "name": "clinicName",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "appointmentDate": {
+          "name": "appointmentDate",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "timeSlot": {
+          "name": "timeSlot",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "appt_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'upcoming'"
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.auditLogs": {
+      "name": "auditLogs",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "staffId": {
+          "name": "staffId",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "staffName": {
+          "name": "staffName",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "action": {
+          "name": "action",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "entityType": {
+          "name": "entityType",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "entityId": {
+          "name": "entityId",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "entityLabel": {
+          "name": "entityLabel",
+          "type": "varchar(200)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "details": {
+          "name": "details",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ipAddress": {
+          "name": "ipAddress",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.corporateGroups": {
+      "name": "corporateGroups",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(200)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "contactPerson": {
+          "name": "contactPerson",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "contactEmail": {
+          "name": "contactEmail",
+          "type": "varchar(320)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "contactPhone": {
+          "name": "contactPhone",
+          "type": "varchar(30)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "isActive": {
+          "name": "isActive",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.groupBookingParticipants": {
+      "name": "groupBookingParticipants",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "groupBookingId": {
+          "name": "groupBookingId",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "memberId": {
+          "name": "memberId",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "memberNumber": {
+          "name": "memberNumber",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "participantName": {
+          "name": "participantName",
+          "type": "varchar(200)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "participantEmail": {
+          "name": "participantEmail",
+          "type": "varchar(320)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "lumensAwarded": {
+          "name": "lumensAwarded",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "transactionId": {
+          "name": "transactionId",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.groupBookings": {
+      "name": "groupBookings",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "corporateGroupId": {
+          "name": "corporateGroupId",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "packageId": {
+          "name": "packageId",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "packageName": {
+          "name": "packageName",
+          "type": "varchar(200)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "clinicId": {
+          "name": "clinicId",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "clinicName": {
+          "name": "clinicName",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "bookingDate": {
+          "name": "bookingDate",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "bookingTime": {
+          "name": "bookingTime",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "headcount": {
+          "name": "headcount",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "totalAmount": {
+          "name": "totalAmount",
+          "type": "numeric(10, 2)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "totalLumens": {
+          "name": "totalLumens",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "status": {
+          "name": "status",
+          "type": "booking_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'pending'"
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "staffId": {
+          "name": "staffId",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.members": {
+      "name": "members",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "userId": {
+          "name": "userId",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "memberNumber": {
+          "name": "memberNumber",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "firstName": {
+          "name": "firstName",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "lastName": {
+          "name": "lastName",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email": {
+          "name": "email",
+          "type": "varchar(320)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "phone": {
+          "name": "phone",
+          "type": "varchar(30)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "dateOfBirth": {
+          "name": "dateOfBirth",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "gender": {
+          "name": "gender",
+          "type": "gender",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tier": {
+          "name": "tier",
+          "type": "tier",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'ember'"
+        },
+        "lumensBalance": {
+          "name": "lumensBalance",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "totalSpend": {
+          "name": "totalSpend",
+          "type": "numeric(10, 2)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'0.00'"
+        },
+        "isCorporate": {
+          "name": "isCorporate",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "corporateGroupId": {
+          "name": "corporateGroupId",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "isActive": {
+          "name": "isActive",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "pushToken": {
+          "name": "pushToken",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "joinedAt": {
+          "name": "joinedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "members_memberNumber_unique": {
+          "name": "members_memberNumber_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "memberNumber"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.staffAccounts": {
+      "name": "staffAccounts",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "username": {
+          "name": "username",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "passwordHash": {
+          "name": "passwordHash",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "fullName": {
+          "name": "fullName",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "role": {
+          "name": "role",
+          "type": "staff_role",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'clinic_assistant'"
+        },
+        "clinicId": {
+          "name": "clinicId",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "isActive": {
+          "name": "isActive",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "lastLoginAt": {
+          "name": "lastLoginAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "staffAccounts_username_unique": {
+          "name": "staffAccounts_username_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "username"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.transactions": {
+      "name": "transactions",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "memberId": {
+          "name": "memberId",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "type": {
+          "name": "type",
+          "type": "tx_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "packageId": {
+          "name": "packageId",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "packageName": {
+          "name": "packageName",
+          "type": "varchar(200)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "rewardId": {
+          "name": "rewardId",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "rewardName": {
+          "name": "rewardName",
+          "type": "varchar(200)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "amountPaid": {
+          "name": "amountPaid",
+          "type": "numeric(10, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "lumensEarned": {
+          "name": "lumensEarned",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "lumensRedeemed": {
+          "name": "lumensRedeemed",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "lumensRate": {
+          "name": "lumensRate",
+          "type": "numeric(4, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "isCorporateRate": {
+          "name": "isCorporateRate",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "clinicId": {
+          "name": "clinicId",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "clinicName": {
+          "name": "clinicName",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "staffId": {
+          "name": "staffId",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "expiryDate": {
+          "name": "expiryDate",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.users": {
+      "name": "users",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "openId": {
+          "name": "openId",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "email": {
+          "name": "email",
+          "type": "varchar(320)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "loginMethod": {
+          "name": "loginMethod",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "role": {
+          "name": "role",
+          "type": "user_role",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'user'"
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "lastSignedIn": {
+          "name": "lastSignedIn",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "users_openId_unique": {
+          "name": "users_openId_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "openId"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {
+    "public.appt_status": {
+      "name": "appt_status",
+      "schema": "public",
+      "values": [
+        "upcoming",
+        "completed",
+        "cancelled",
+        "no-show"
+      ]
+    },
+    "public.booking_status": {
+      "name": "booking_status",
+      "schema": "public",
+      "values": [
+        "pending",
+        "confirmed",
+        "completed",
+        "cancelled"
+      ]
+    },
+    "public.gender": {
+      "name": "gender",
+      "schema": "public",
+      "values": [
+        "male",
+        "female",
+        "other"
+      ]
+    },
+    "public.staff_role": {
+      "name": "staff_role",
+      "schema": "public",
+      "values": [
+        "admin",
+        "manager",
+        "clinic_assistant",
+        "healthscreen_assistant"
+      ]
+    },
+    "public.tier": {
+      "name": "tier",
+      "schema": "public",
+      "values": [
+        "ember",
+        "radiance",
+        "solar",
+        "solaris_elite"
+      ]
+    },
+    "public.tx_type": {
+      "name": "tx_type",
+      "schema": "public",
+      "values": [
+        "earn",
+        "redeem"
+      ]
+    },
+    "public.user_role": {
+      "name": "user_role",
+      "schema": "public",
+      "values": [
+        "user",
+        "admin"
+      ]
+    }
+  },
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}
