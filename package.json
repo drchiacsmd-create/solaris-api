@@ -7,17 +7,8 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
-    "@trpc/server": "11.7.2",
-    "axios": "^1.13.2",
     "bcryptjs": "^2.4.3",
-    "cookie": "^1.1.1",
-    "dotenv": "^16.6.1",
-    "drizzle-orm": "^0.44.7",
-    "express": "^4.22.1",
-    "jose": "6.1.0",
-    "postgres": "^3.4.9",
-    "superjson": "^1.13.3",
-    "zod": "^4.2.1"
+    "postgres": "^3.4.9"
   },
   "engines": {
     "node": ">=20"
