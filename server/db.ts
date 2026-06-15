@@ -88,9 +88,20 @@ export async function createAdminUser(email: string, name: string): Promise<numb
 }
 
 // ── Members ─────────────────────────────────────────────────────────────────
-function generateMemberNumber(): string {
-  const num = Math.floor(100000 + Math.random() * 900000);
-  return `SLR${num}`;
+async function generateNextMemberNumber(): Promise<string> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db
+    .select({ memberNumber: members.memberNumber })
+    .from(members)
+    .where(ilike(members.memberNumber, 'SLR%'))
+    .orderBy(desc(members.memberNumber));
+  if (result.length === 0) return 'SLR100000001';
+  const nums = result
+    .map(r => parseInt(r.memberNumber.replace(/^SLR/, ''), 10))
+    .filter(n => !isNaN(n));
+  const max = Math.max(...nums);
+  return `SLR${max + 1}`;
 }
 
 function calculateTier(totalSpend: number): "ember" | "radiance" | "solar" | "solaris_elite" {
@@ -103,14 +114,17 @@ function calculateTier(totalSpend: number): "ember" | "radiance" | "solar" | "so
 export async function createMember(data: Omit<InsertMember, "memberNumber">): Promise<number> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  let memberNumber = generateMemberNumber();
-  let existing = await db.select({ id: members.id }).from(members).where(eq(members.memberNumber, memberNumber)).limit(1);
-  while (existing.length > 0) {
-    memberNumber = generateMemberNumber();
-    existing = await db.select({ id: members.id }).from(members).where(eq(members.memberNumber, memberNumber)).limit(1);
-  }
+  const memberNumber = await generateNextMemberNumber();
   const result = await db.insert(members).values({ ...data, memberNumber }).returning({ id: members.id });
   return result[0].id;
+}
+
+export async function deleteMember(id: number): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(appointments).where(eq(appointments.memberId, id));
+  await db.delete(transactions).where(eq(transactions.memberId, id));
+  await db.delete(members).where(eq(members.id, id));
 }
 
 export async function getMemberByUserId(userId: number) {

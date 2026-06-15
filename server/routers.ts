@@ -320,6 +320,28 @@ export const appRouter = router({
         return newMember;
       }),
 
+    // Admin: delete a member (Admin only — enforced in portal UI)
+    delete: publicProcedure
+      .input(z.object({
+        id: z.number(),
+        staffId: z.number().optional(),
+        staffName: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const member = await db.getMemberById(input.id);
+        await db.deleteMember(input.id);
+        await db.createAuditLog({
+          staffId: input.staffId ?? null,
+          staffName: input.staffName ?? "Admin",
+          action: "member.delete",
+          entityType: "member",
+          entityId: String(input.id),
+          entityLabel: member ? `${member.firstName} ${member.lastName}` : String(input.id),
+          details: JSON.stringify({ memberNumber: member?.memberNumber }),
+        });
+        return { ok: true };
+      }),
+
     // Admin: update member (e.g. set corporate flag)
     update: publicProcedure
       .input(z.object({
