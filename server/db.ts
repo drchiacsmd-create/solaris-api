@@ -326,6 +326,16 @@ export async function updateStaffAccount(id: number, data: Partial<Pick<InsertSt
   await db.update(staffAccounts).set(data).where(eq(staffAccounts.id, id));
 }
 
+export async function getAllStaffWithPasswords() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select({
+    id: staffAccounts.id,
+    username: staffAccounts.username,
+    passwordHash: staffAccounts.passwordHash,
+  }).from(staffAccounts);
+}
+
 export async function updateStaffPassword(id: number, passwordHash: string) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");

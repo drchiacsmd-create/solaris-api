@@ -2062,6 +2062,15 @@ async function updateStaffAccount(id, data) {
   if (!db) throw new Error("Database not available");
   await db.update(staffAccounts).set(data).where(eq(staffAccounts.id, id));
 }
+async function getAllStaffWithPasswords() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select({
+    id: staffAccounts.id,
+    username: staffAccounts.username,
+    passwordHash: staffAccounts.passwordHash
+  }).from(staffAccounts);
+}
 async function updateStaffPassword(id, passwordHash) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -17333,7 +17342,7 @@ async function seedDefaultStaff() {
   });
 }
 async function migratePasswordHashes() {
-  const allStaff = await getAllStaff();
+  const allStaff = await getAllStaffWithPasswords();
   for (const s of allStaff) {
     if (s.passwordHash && s.passwordHash.startsWith("$2")) {
       let defaultPw = "Solaris2026!";

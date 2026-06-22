@@ -69,7 +69,7 @@ async function seedDefaultStaff() {
 
 // Migrate bcrypt hashes to scrypt on startup
 async function migratePasswordHashes() {
-  const allStaff = await db.getAllStaff();
+  const allStaff = await db.getAllStaffWithPasswords();
   for (const s of allStaff) {
     // bcrypt hashes start with $2a$ or $2b$; scrypt hashes are hex:hex format
     if (s.passwordHash && s.passwordHash.startsWith("$2")) {
