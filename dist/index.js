@@ -1,33 +1,9 @@
-"use strict";
-var __create = Object.create;
-var __defProp = Object.defineProperty;
-var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
-var __getOwnPropNames = Object.getOwnPropertyNames;
-var __getProtoOf = Object.getPrototypeOf;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __copyProps = (to, from, except, desc2) => {
-  if (from && typeof from === "object" || typeof from === "function") {
-    for (let key of __getOwnPropNames(from))
-      if (!__hasOwnProp.call(to, key) && key !== except)
-        __defProp(to, key, { get: () => from[key], enumerable: !(desc2 = __getOwnPropDesc(from, key)) || desc2.enumerable });
-  }
-  return to;
-};
-var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
-  // If the importer is in node compatibility mode or this is not an ESM
-  // file that has been converted to a CommonJS file using a Babel-
-  // compatible transform (i.e. "__esModule" has not been set), then set
-  // "default" to the CommonJS "module.exports" for node compatibility.
-  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
-  mod
-));
-
 // server/_core/index.ts
-var import_config = require("dotenv/config");
-var import_express = __toESM(require("express"));
-var import_http = require("http");
-var import_net = __toESM(require("net"));
-var import_express2 = require("@trpc/server/adapters/express");
+import "dotenv/config";
+import express from "express";
+import { createServer } from "http";
+import net from "net";
+import { createExpressMiddleware } from "@trpc/server/adapters/express";
 
 // shared/const.ts
 var COOKIE_NAME = "app_session_id";
@@ -37,175 +13,185 @@ var UNAUTHED_ERR_MSG = "Please login (10001)";
 var NOT_ADMIN_ERR_MSG = "You do not have required permission (10002)";
 
 // server/db.ts
-var import_postgres_js = require("drizzle-orm/postgres-js");
-var import_postgres = __toESM(require("postgres"));
-var import_drizzle_orm = require("drizzle-orm");
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
+import { eq, desc, or, ilike, and, sql } from "drizzle-orm";
 
 // drizzle/schema.ts
-var import_pg_core = require("drizzle-orm/pg-core");
-var userRoleEnum = (0, import_pg_core.pgEnum)("user_role", ["user", "admin"]);
-var genderEnum = (0, import_pg_core.pgEnum)("gender", ["male", "female", "other"]);
-var tierEnum = (0, import_pg_core.pgEnum)("tier", ["ember", "radiance", "solar", "solaris_elite"]);
-var txTypeEnum = (0, import_pg_core.pgEnum)("tx_type", ["earn", "redeem"]);
-var staffRoleEnum = (0, import_pg_core.pgEnum)("staff_role", ["admin", "manager", "clinic_assistant", "healthscreen_assistant"]);
-var bookingStatusEnum = (0, import_pg_core.pgEnum)("booking_status", ["pending", "confirmed", "completed", "cancelled"]);
-var apptStatusEnum = (0, import_pg_core.pgEnum)("appt_status", ["upcoming", "completed", "cancelled", "no-show"]);
-var users = (0, import_pg_core.pgTable)("users", {
-  id: (0, import_pg_core.serial)("id").primaryKey(),
-  openId: (0, import_pg_core.varchar)("openId", { length: 64 }).notNull().unique(),
-  name: (0, import_pg_core.text)("name"),
-  email: (0, import_pg_core.varchar)("email", { length: 320 }),
-  loginMethod: (0, import_pg_core.varchar)("loginMethod", { length: 64 }),
+import {
+  boolean,
+  integer,
+  numeric,
+  pgEnum,
+  pgTable,
+  serial,
+  text,
+  timestamp,
+  varchar
+} from "drizzle-orm/pg-core";
+var userRoleEnum = pgEnum("user_role", ["user", "admin"]);
+var genderEnum = pgEnum("gender", ["male", "female", "other"]);
+var tierEnum = pgEnum("tier", ["ember", "radiance", "solar", "solaris_elite"]);
+var txTypeEnum = pgEnum("tx_type", ["earn", "redeem"]);
+var staffRoleEnum = pgEnum("staff_role", ["admin", "manager", "clinic_assistant", "healthscreen_assistant"]);
+var bookingStatusEnum = pgEnum("booking_status", ["pending", "confirmed", "completed", "cancelled"]);
+var apptStatusEnum = pgEnum("appt_status", ["upcoming", "completed", "cancelled", "no-show"]);
+var users = pgTable("users", {
+  id: serial("id").primaryKey(),
+  openId: varchar("openId", { length: 64 }).notNull().unique(),
+  name: text("name"),
+  email: varchar("email", { length: 320 }),
+  loginMethod: varchar("loginMethod", { length: 64 }),
   role: userRoleEnum("role").default("user").notNull(),
-  createdAt: (0, import_pg_core.timestamp)("createdAt").defaultNow().notNull(),
-  updatedAt: (0, import_pg_core.timestamp)("updatedAt").defaultNow().notNull(),
-  lastSignedIn: (0, import_pg_core.timestamp)("lastSignedIn").defaultNow().notNull()
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+  lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull()
 });
-var members = (0, import_pg_core.pgTable)("members", {
-  id: (0, import_pg_core.serial)("id").primaryKey(),
-  userId: (0, import_pg_core.integer)("userId").notNull(),
+var members = pgTable("members", {
+  id: serial("id").primaryKey(),
+  userId: integer("userId").notNull(),
   // FK → users.id
-  memberNumber: (0, import_pg_core.varchar)("memberNumber", { length: 20 }).notNull().unique(),
+  memberNumber: varchar("memberNumber", { length: 20 }).notNull().unique(),
   // SLR100001
-  firstName: (0, import_pg_core.varchar)("firstName", { length: 100 }).notNull(),
-  lastName: (0, import_pg_core.varchar)("lastName", { length: 100 }).notNull(),
-  email: (0, import_pg_core.varchar)("email", { length: 320 }).notNull(),
-  phone: (0, import_pg_core.varchar)("phone", { length: 30 }),
-  dateOfBirth: (0, import_pg_core.varchar)("dateOfBirth", { length: 20 }),
+  firstName: varchar("firstName", { length: 100 }).notNull(),
+  lastName: varchar("lastName", { length: 100 }).notNull(),
+  email: varchar("email", { length: 320 }).notNull(),
+  phone: varchar("phone", { length: 30 }),
+  dateOfBirth: varchar("dateOfBirth", { length: 20 }),
   gender: genderEnum("gender"),
   tier: tierEnum("tier").default("ember").notNull(),
-  lumensBalance: (0, import_pg_core.integer)("lumensBalance").default(0).notNull(),
-  totalSpend: (0, import_pg_core.numeric)("totalSpend", { precision: 10, scale: 2 }).default("0.00").notNull(),
-  isCorporate: (0, import_pg_core.boolean)("isCorporate").default(false).notNull(),
-  corporateGroupId: (0, import_pg_core.integer)("corporateGroupId"),
+  lumensBalance: integer("lumensBalance").default(0).notNull(),
+  totalSpend: numeric("totalSpend", { precision: 10, scale: 2 }).default("0.00").notNull(),
+  isCorporate: boolean("isCorporate").default(false).notNull(),
+  corporateGroupId: integer("corporateGroupId"),
   // FK → corporateGroups.id (nullable)
-  isActive: (0, import_pg_core.boolean)("isActive").default(true).notNull(),
-  pushToken: (0, import_pg_core.varchar)("pushToken", { length: 500 }),
+  isActive: boolean("isActive").default(true).notNull(),
+  pushToken: varchar("pushToken", { length: 500 }),
   // Expo push token for notifications
-  joinedAt: (0, import_pg_core.timestamp)("joinedAt").defaultNow().notNull(),
-  updatedAt: (0, import_pg_core.timestamp)("updatedAt").defaultNow().notNull()
+  joinedAt: timestamp("joinedAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull()
 });
-var corporateGroups = (0, import_pg_core.pgTable)("corporateGroups", {
-  id: (0, import_pg_core.serial)("id").primaryKey(),
-  name: (0, import_pg_core.varchar)("name", { length: 200 }).notNull(),
-  contactPerson: (0, import_pg_core.varchar)("contactPerson", { length: 100 }),
-  contactEmail: (0, import_pg_core.varchar)("contactEmail", { length: 320 }),
-  contactPhone: (0, import_pg_core.varchar)("contactPhone", { length: 30 }),
-  notes: (0, import_pg_core.text)("notes"),
-  isActive: (0, import_pg_core.boolean)("isActive").default(true).notNull(),
-  createdAt: (0, import_pg_core.timestamp)("createdAt").defaultNow().notNull(),
-  updatedAt: (0, import_pg_core.timestamp)("updatedAt").defaultNow().notNull()
+var corporateGroups = pgTable("corporateGroups", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 200 }).notNull(),
+  contactPerson: varchar("contactPerson", { length: 100 }),
+  contactEmail: varchar("contactEmail", { length: 320 }),
+  contactPhone: varchar("contactPhone", { length: 30 }),
+  notes: text("notes"),
+  isActive: boolean("isActive").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull()
 });
-var transactions = (0, import_pg_core.pgTable)("transactions", {
-  id: (0, import_pg_core.serial)("id").primaryKey(),
-  memberId: (0, import_pg_core.integer)("memberId").notNull(),
+var transactions = pgTable("transactions", {
+  id: serial("id").primaryKey(),
+  memberId: integer("memberId").notNull(),
   // FK → members.id
   type: txTypeEnum("type").notNull(),
-  packageId: (0, import_pg_core.varchar)("packageId", { length: 50 }),
+  packageId: varchar("packageId", { length: 50 }),
   // e.g. 'solara-core'
-  packageName: (0, import_pg_core.varchar)("packageName", { length: 200 }),
-  rewardId: (0, import_pg_core.varchar)("rewardId", { length: 50 }),
+  packageName: varchar("packageName", { length: 200 }),
+  rewardId: varchar("rewardId", { length: 50 }),
   // e.g. 'reward-clinic-consult'
-  rewardName: (0, import_pg_core.varchar)("rewardName", { length: 200 }),
-  amountPaid: (0, import_pg_core.numeric)("amountPaid", { precision: 10, scale: 2 }),
-  lumensEarned: (0, import_pg_core.integer)("lumensEarned").default(0).notNull(),
-  lumensRedeemed: (0, import_pg_core.integer)("lumensRedeemed").default(0).notNull(),
-  lumensRate: (0, import_pg_core.numeric)("lumensRate", { precision: 4, scale: 2 }),
+  rewardName: varchar("rewardName", { length: 200 }),
+  amountPaid: numeric("amountPaid", { precision: 10, scale: 2 }),
+  lumensEarned: integer("lumensEarned").default(0).notNull(),
+  lumensRedeemed: integer("lumensRedeemed").default(0).notNull(),
+  lumensRate: numeric("lumensRate", { precision: 4, scale: 2 }),
   // 0.50 or 1.00
-  isCorporateRate: (0, import_pg_core.boolean)("isCorporateRate").default(false).notNull(),
-  clinicId: (0, import_pg_core.varchar)("clinicId", { length: 50 }),
+  isCorporateRate: boolean("isCorporateRate").default(false).notNull(),
+  clinicId: varchar("clinicId", { length: 50 }),
   // 'central' | 'north-east'
-  clinicName: (0, import_pg_core.varchar)("clinicName", { length: 100 }),
-  staffId: (0, import_pg_core.integer)("staffId"),
+  clinicName: varchar("clinicName", { length: 100 }),
+  staffId: integer("staffId"),
   // FK → staffAccounts.id
-  notes: (0, import_pg_core.text)("notes"),
-  expiryDate: (0, import_pg_core.timestamp)("expiryDate"),
+  notes: text("notes"),
+  expiryDate: timestamp("expiryDate"),
   // Lumens expire 365 days after earn
-  createdAt: (0, import_pg_core.timestamp)("createdAt").defaultNow().notNull()
+  createdAt: timestamp("createdAt").defaultNow().notNull()
 });
-var staffAccounts = (0, import_pg_core.pgTable)("staffAccounts", {
-  id: (0, import_pg_core.serial)("id").primaryKey(),
-  username: (0, import_pg_core.varchar)("username", { length: 100 }).notNull().unique(),
-  passwordHash: (0, import_pg_core.varchar)("passwordHash", { length: 255 }).notNull(),
-  fullName: (0, import_pg_core.varchar)("fullName", { length: 100 }).notNull(),
+var staffAccounts = pgTable("staffAccounts", {
+  id: serial("id").primaryKey(),
+  username: varchar("username", { length: 100 }).notNull().unique(),
+  passwordHash: varchar("passwordHash", { length: 255 }).notNull(),
+  fullName: varchar("fullName", { length: 100 }).notNull(),
   role: staffRoleEnum("role").default("clinic_assistant").notNull(),
-  clinicId: (0, import_pg_core.varchar)("clinicId", { length: 50 }),
+  clinicId: varchar("clinicId", { length: 50 }),
   // null = all clinics
-  isActive: (0, import_pg_core.boolean)("isActive").default(true).notNull(),
-  lastLoginAt: (0, import_pg_core.timestamp)("lastLoginAt"),
-  createdAt: (0, import_pg_core.timestamp)("createdAt").defaultNow().notNull(),
-  updatedAt: (0, import_pg_core.timestamp)("updatedAt").defaultNow().notNull()
+  isActive: boolean("isActive").default(true).notNull(),
+  lastLoginAt: timestamp("lastLoginAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull()
 });
-var groupBookings = (0, import_pg_core.pgTable)("groupBookings", {
-  id: (0, import_pg_core.serial)("id").primaryKey(),
-  corporateGroupId: (0, import_pg_core.integer)("corporateGroupId").notNull(),
+var groupBookings = pgTable("groupBookings", {
+  id: serial("id").primaryKey(),
+  corporateGroupId: integer("corporateGroupId").notNull(),
   // FK → corporateGroups.id
-  packageId: (0, import_pg_core.varchar)("packageId", { length: 50 }).notNull(),
-  packageName: (0, import_pg_core.varchar)("packageName", { length: 200 }).notNull(),
-  clinicId: (0, import_pg_core.varchar)("clinicId", { length: 50 }).notNull(),
-  clinicName: (0, import_pg_core.varchar)("clinicName", { length: 100 }).notNull(),
-  bookingDate: (0, import_pg_core.varchar)("bookingDate", { length: 20 }).notNull(),
+  packageId: varchar("packageId", { length: 50 }).notNull(),
+  packageName: varchar("packageName", { length: 200 }).notNull(),
+  clinicId: varchar("clinicId", { length: 50 }).notNull(),
+  clinicName: varchar("clinicName", { length: 100 }).notNull(),
+  bookingDate: varchar("bookingDate", { length: 20 }).notNull(),
   // YYYY-MM-DD
-  bookingTime: (0, import_pg_core.varchar)("bookingTime", { length: 10 }).notNull(),
+  bookingTime: varchar("bookingTime", { length: 10 }).notNull(),
   // HH:MM
-  headcount: (0, import_pg_core.integer)("headcount").notNull(),
-  totalAmount: (0, import_pg_core.numeric)("totalAmount", { precision: 10, scale: 2 }).notNull(),
-  totalLumens: (0, import_pg_core.integer)("totalLumens").default(0).notNull(),
+  headcount: integer("headcount").notNull(),
+  totalAmount: numeric("totalAmount", { precision: 10, scale: 2 }).notNull(),
+  totalLumens: integer("totalLumens").default(0).notNull(),
   status: bookingStatusEnum("status").default("pending").notNull(),
-  notes: (0, import_pg_core.text)("notes"),
-  staffId: (0, import_pg_core.integer)("staffId"),
+  notes: text("notes"),
+  staffId: integer("staffId"),
   // FK → staffAccounts.id
-  createdAt: (0, import_pg_core.timestamp)("createdAt").defaultNow().notNull(),
-  updatedAt: (0, import_pg_core.timestamp)("updatedAt").defaultNow().notNull()
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull()
 });
-var appointments = (0, import_pg_core.pgTable)("appointments", {
-  id: (0, import_pg_core.serial)("id").primaryKey(),
-  memberId: (0, import_pg_core.integer)("memberId").notNull(),
+var appointments = pgTable("appointments", {
+  id: serial("id").primaryKey(),
+  memberId: integer("memberId").notNull(),
   // FK → members.id
-  packageId: (0, import_pg_core.varchar)("packageId", { length: 50 }).notNull(),
-  packageName: (0, import_pg_core.varchar)("packageName", { length: 200 }).notNull(),
-  clinicId: (0, import_pg_core.varchar)("clinicId", { length: 50 }).notNull(),
-  clinicName: (0, import_pg_core.varchar)("clinicName", { length: 100 }).notNull(),
-  appointmentDate: (0, import_pg_core.varchar)("appointmentDate", { length: 20 }).notNull(),
+  packageId: varchar("packageId", { length: 50 }).notNull(),
+  packageName: varchar("packageName", { length: 200 }).notNull(),
+  clinicId: varchar("clinicId", { length: 50 }).notNull(),
+  clinicName: varchar("clinicName", { length: 100 }).notNull(),
+  appointmentDate: varchar("appointmentDate", { length: 20 }).notNull(),
   // YYYY-MM-DD
-  timeSlot: (0, import_pg_core.varchar)("timeSlot", { length: 10 }).notNull(),
+  timeSlot: varchar("timeSlot", { length: 10 }).notNull(),
   // HH:MM
   status: apptStatusEnum("status").default("upcoming").notNull(),
-  notes: (0, import_pg_core.text)("notes"),
-  createdAt: (0, import_pg_core.timestamp)("createdAt").defaultNow().notNull(),
-  updatedAt: (0, import_pg_core.timestamp)("updatedAt").defaultNow().notNull()
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull()
 });
-var groupBookingParticipants = (0, import_pg_core.pgTable)("groupBookingParticipants", {
-  id: (0, import_pg_core.serial)("id").primaryKey(),
-  groupBookingId: (0, import_pg_core.integer)("groupBookingId").notNull(),
+var groupBookingParticipants = pgTable("groupBookingParticipants", {
+  id: serial("id").primaryKey(),
+  groupBookingId: integer("groupBookingId").notNull(),
   // FK → groupBookings.id
-  memberId: (0, import_pg_core.integer)("memberId"),
+  memberId: integer("memberId"),
   // FK → members.id (null if not yet a member)
-  memberNumber: (0, import_pg_core.varchar)("memberNumber", { length: 20 }),
-  participantName: (0, import_pg_core.varchar)("participantName", { length: 200 }).notNull(),
-  participantEmail: (0, import_pg_core.varchar)("participantEmail", { length: 320 }),
-  lumensAwarded: (0, import_pg_core.integer)("lumensAwarded").default(0).notNull(),
-  transactionId: (0, import_pg_core.integer)("transactionId"),
+  memberNumber: varchar("memberNumber", { length: 20 }),
+  participantName: varchar("participantName", { length: 200 }).notNull(),
+  participantEmail: varchar("participantEmail", { length: 320 }),
+  lumensAwarded: integer("lumensAwarded").default(0).notNull(),
+  transactionId: integer("transactionId"),
   // FK → transactions.id (set after completion)
-  createdAt: (0, import_pg_core.timestamp)("createdAt").defaultNow().notNull()
+  createdAt: timestamp("createdAt").defaultNow().notNull()
 });
-var auditLogs = (0, import_pg_core.pgTable)("auditLogs", {
-  id: (0, import_pg_core.serial)("id").primaryKey(),
-  staffId: (0, import_pg_core.integer)("staffId"),
+var auditLogs = pgTable("auditLogs", {
+  id: serial("id").primaryKey(),
+  staffId: integer("staffId"),
   // FK → staffAccounts.id (null = system)
-  staffName: (0, import_pg_core.varchar)("staffName", { length: 100 }).notNull(),
-  action: (0, import_pg_core.varchar)("action", { length: 100 }).notNull(),
+  staffName: varchar("staffName", { length: 100 }).notNull(),
+  action: varchar("action", { length: 100 }).notNull(),
   // e.g. 'member.create', 'transaction.add'
-  entityType: (0, import_pg_core.varchar)("entityType", { length: 50 }).notNull(),
+  entityType: varchar("entityType", { length: 50 }).notNull(),
   // 'member' | 'transaction' | 'appointment'
-  entityId: (0, import_pg_core.varchar)("entityId", { length: 50 }),
+  entityId: varchar("entityId", { length: 50 }),
   // ID of the affected record
-  entityLabel: (0, import_pg_core.varchar)("entityLabel", { length: 200 }),
+  entityLabel: varchar("entityLabel", { length: 200 }),
   // human-readable label e.g. member name
-  details: (0, import_pg_core.text)("details"),
+  details: text("details"),
   // JSON string with before/after or summary
-  ipAddress: (0, import_pg_core.varchar)("ipAddress", { length: 50 }),
-  createdAt: (0, import_pg_core.timestamp)("createdAt").defaultNow().notNull()
+  ipAddress: varchar("ipAddress", { length: 50 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull()
 });
 
 // server/_core/env.ts
@@ -225,8 +211,8 @@ var _db = null;
 async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
-      const client = (0, import_postgres.default)(process.env.DATABASE_URL, { ssl: "require" });
-      _db = (0, import_postgres_js.drizzle)(client);
+      const client = postgres(process.env.DATABASE_URL, { ssl: "require" });
+      _db = drizzle(client);
     } catch (error) {
       console.warn("[Database] Failed to connect:", error);
       _db = null;
@@ -278,7 +264,7 @@ async function upsertUser(user) {
 async function getUserByOpenId(openId) {
   const db = await getDb();
   if (!db) return void 0;
-  const result = await db.select().from(users).where((0, import_drizzle_orm.eq)(users.openId, openId)).limit(1);
+  const result = await db.select().from(users).where(eq(users.openId, openId)).limit(1);
   return result.length > 0 ? result[0] : void 0;
 }
 async function createAdminUser(email, name) {
@@ -291,7 +277,7 @@ async function createAdminUser(email, name) {
 async function generateNextMemberNumber() {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.select({ memberNumber: members.memberNumber }).from(members).where((0, import_drizzle_orm.ilike)(members.memberNumber, "SLR%")).orderBy((0, import_drizzle_orm.desc)(members.memberNumber));
+  const result = await db.select({ memberNumber: members.memberNumber }).from(members).where(ilike(members.memberNumber, "SLR%")).orderBy(desc(members.memberNumber));
   if (result.length === 0) return "SLR100000001";
   const nums = result.map((r) => parseInt(r.memberNumber.replace(/^SLR/, ""), 10)).filter((n) => !isNaN(n));
   const max = Math.max(...nums);
@@ -313,26 +299,26 @@ async function createMember(data) {
 async function deleteMember(id) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await db.delete(appointments).where((0, import_drizzle_orm.eq)(appointments.memberId, id));
-  await db.delete(transactions).where((0, import_drizzle_orm.eq)(transactions.memberId, id));
-  await db.delete(members).where((0, import_drizzle_orm.eq)(members.id, id));
+  await db.delete(appointments).where(eq(appointments.memberId, id));
+  await db.delete(transactions).where(eq(transactions.memberId, id));
+  await db.delete(members).where(eq(members.id, id));
 }
 async function getMemberByUserId(userId) {
   const db = await getDb();
   if (!db) return void 0;
-  const result = await db.select().from(members).where((0, import_drizzle_orm.eq)(members.userId, userId)).limit(1);
+  const result = await db.select().from(members).where(eq(members.userId, userId)).limit(1);
   return result.length > 0 ? result[0] : void 0;
 }
 async function getMemberById(id) {
   const db = await getDb();
   if (!db) return void 0;
-  const result = await db.select().from(members).where((0, import_drizzle_orm.eq)(members.id, id)).limit(1);
+  const result = await db.select().from(members).where(eq(members.id, id)).limit(1);
   return result.length > 0 ? result[0] : void 0;
 }
 async function getMemberByNumber(memberNumber) {
   const db = await getDb();
   if (!db) return void 0;
-  const result = await db.select().from(members).where((0, import_drizzle_orm.eq)(members.memberNumber, memberNumber)).limit(1);
+  const result = await db.select().from(members).where(eq(members.memberNumber, memberNumber)).limit(1);
   return result.length > 0 ? result[0] : void 0;
 }
 async function getAllMembers(search) {
@@ -340,16 +326,16 @@ async function getAllMembers(search) {
   if (!db) return [];
   if (search) {
     return db.select().from(members).where(
-      (0, import_drizzle_orm.or)(
-        (0, import_drizzle_orm.ilike)(members.firstName, `%${search}%`),
-        (0, import_drizzle_orm.ilike)(members.lastName, `%${search}%`),
-        (0, import_drizzle_orm.ilike)(members.email, `%${search}%`),
-        (0, import_drizzle_orm.ilike)(members.memberNumber, `%${search}%`),
-        import_drizzle_orm.sql`(${members.firstName} || ' ' || ${members.lastName}) ILIKE ${`%${search}%`}`
+      or(
+        ilike(members.firstName, `%${search}%`),
+        ilike(members.lastName, `%${search}%`),
+        ilike(members.email, `%${search}%`),
+        ilike(members.memberNumber, `%${search}%`),
+        sql`(${members.firstName} || ' ' || ${members.lastName}) ILIKE ${`%${search}%`}`
       )
-    ).orderBy((0, import_drizzle_orm.desc)(members.joinedAt));
+    ).orderBy(desc(members.joinedAt));
   }
-  return db.select().from(members).orderBy((0, import_drizzle_orm.desc)(members.joinedAt));
+  return db.select().from(members).orderBy(desc(members.joinedAt));
 }
 async function updateMemberBalance(memberId, lumensChange, spendChange) {
   const db = await getDb();
@@ -363,17 +349,17 @@ async function updateMemberBalance(memberId, lumensChange, spendChange) {
     lumensBalance: newBalance,
     totalSpend: newSpend.toFixed(2),
     tier: newTier
-  }).where((0, import_drizzle_orm.eq)(members.id, memberId));
+  }).where(eq(members.id, memberId));
 }
 async function updateMember(id, data) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await db.update(members).set(data).where((0, import_drizzle_orm.eq)(members.id, id));
+  await db.update(members).set(data).where(eq(members.id, id));
 }
 async function savePushToken(memberId, token) {
   const db = await getDb();
   if (!db) return;
-  await db.update(members).set({ pushToken: token }).where((0, import_drizzle_orm.eq)(members.id, memberId));
+  await db.update(members).set({ pushToken: token }).where(eq(members.id, memberId));
 }
 async function createTransaction(data) {
   const db = await getDb();
@@ -384,26 +370,26 @@ async function createTransaction(data) {
 async function getTransactionsByMember(memberId) {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(transactions).where((0, import_drizzle_orm.eq)(transactions.memberId, memberId)).orderBy((0, import_drizzle_orm.desc)(transactions.createdAt));
+  return db.select().from(transactions).where(eq(transactions.memberId, memberId)).orderBy(desc(transactions.createdAt));
 }
 async function getAllTransactions(limit = 100) {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(transactions).orderBy((0, import_drizzle_orm.desc)(transactions.createdAt)).limit(limit);
+  return db.select().from(transactions).orderBy(desc(transactions.createdAt)).limit(limit);
 }
 async function getTransactionStats() {
   const db = await getDb();
   if (!db) return { totalMembers: 0, totalLumensIssued: 0, totalLumensRedeemed: 0, totalRevenue: 0 };
-  const [memberCount] = await db.select({ count: import_drizzle_orm.sql`count(*)` }).from(members);
-  const [activeCount] = await db.select({ count: import_drizzle_orm.sql`count(*)` }).from(members).where((0, import_drizzle_orm.eq)(members.isActive, true));
-  const [corporateCount] = await db.select({ count: import_drizzle_orm.sql`count(*)` }).from(members).where((0, import_drizzle_orm.eq)(members.isCorporate, true));
+  const [memberCount] = await db.select({ count: sql`count(*)` }).from(members);
+  const [activeCount] = await db.select({ count: sql`count(*)` }).from(members).where(eq(members.isActive, true));
+  const [corporateCount] = await db.select({ count: sql`count(*)` }).from(members).where(eq(members.isCorporate, true));
   const [earnStats] = await db.select({
-    total: import_drizzle_orm.sql`COALESCE(SUM("lumensEarned"), 0)`,
-    revenue: import_drizzle_orm.sql`COALESCE(SUM(CAST("amountPaid" AS DECIMAL(10,2))), 0)`
-  }).from(transactions).where((0, import_drizzle_orm.eq)(transactions.type, "earn"));
+    total: sql`COALESCE(SUM("lumensEarned"), 0)`,
+    revenue: sql`COALESCE(SUM(CAST("amountPaid" AS DECIMAL(10,2))), 0)`
+  }).from(transactions).where(eq(transactions.type, "earn"));
   const [redeemStats] = await db.select({
-    total: import_drizzle_orm.sql`COALESCE(SUM("lumensRedeemed"), 0)`
-  }).from(transactions).where((0, import_drizzle_orm.eq)(transactions.type, "redeem"));
+    total: sql`COALESCE(SUM("lumensRedeemed"), 0)`
+  }).from(transactions).where(eq(transactions.type, "redeem"));
   return {
     totalMembers: memberCount?.count ?? 0,
     activeMembers: activeCount?.count ?? 0,
@@ -418,7 +404,7 @@ async function getTierDistribution() {
   if (!db) return [];
   return db.select({
     tier: members.tier,
-    count: import_drizzle_orm.sql`count(*)`
+    count: sql`count(*)`
   }).from(members).groupBy(members.tier);
 }
 async function createStaffAccount(data) {
@@ -431,20 +417,20 @@ async function getStaffByUsername(username) {
   const db = await getDb();
   if (!db) return void 0;
   const result = await db.select().from(staffAccounts).where(
-    (0, import_drizzle_orm.and)((0, import_drizzle_orm.eq)(staffAccounts.username, username), (0, import_drizzle_orm.eq)(staffAccounts.isActive, true))
+    and(eq(staffAccounts.username, username), eq(staffAccounts.isActive, true))
   ).limit(1);
   return result.length > 0 ? result[0] : void 0;
 }
 async function getStaffById(id) {
   const db = await getDb();
   if (!db) return void 0;
-  const result = await db.select().from(staffAccounts).where((0, import_drizzle_orm.eq)(staffAccounts.id, id)).limit(1);
+  const result = await db.select().from(staffAccounts).where(eq(staffAccounts.id, id)).limit(1);
   return result.length > 0 ? result[0] : void 0;
 }
 async function updateStaffLastLogin(id) {
   const db = await getDb();
   if (!db) return;
-  await db.update(staffAccounts).set({ lastLoginAt: /* @__PURE__ */ new Date() }).where((0, import_drizzle_orm.eq)(staffAccounts.id, id));
+  await db.update(staffAccounts).set({ lastLoginAt: /* @__PURE__ */ new Date() }).where(eq(staffAccounts.id, id));
 }
 async function getAllStaff() {
   const db = await getDb();
@@ -463,12 +449,12 @@ async function getAllStaff() {
 async function updateStaffAccount(id, data) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await db.update(staffAccounts).set(data).where((0, import_drizzle_orm.eq)(staffAccounts.id, id));
+  await db.update(staffAccounts).set(data).where(eq(staffAccounts.id, id));
 }
 async function updateStaffPassword(id, passwordHash) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await db.update(staffAccounts).set({ passwordHash }).where((0, import_drizzle_orm.eq)(staffAccounts.id, id));
+  await db.update(staffAccounts).set({ passwordHash }).where(eq(staffAccounts.id, id));
 }
 async function createCorporateGroup(data) {
   const db = await getDb();
@@ -479,12 +465,12 @@ async function createCorporateGroup(data) {
 async function getAllCorporateGroups() {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(corporateGroups).where((0, import_drizzle_orm.eq)(corporateGroups.isActive, true)).orderBy(corporateGroups.name);
+  return db.select().from(corporateGroups).where(eq(corporateGroups.isActive, true)).orderBy(corporateGroups.name);
 }
 async function getCorporateGroupById(id) {
   const db = await getDb();
   if (!db) return void 0;
-  const result = await db.select().from(corporateGroups).where((0, import_drizzle_orm.eq)(corporateGroups.id, id)).limit(1);
+  const result = await db.select().from(corporateGroups).where(eq(corporateGroups.id, id)).limit(1);
   return result.length > 0 ? result[0] : void 0;
 }
 async function createGroupBooking(booking, participants) {
@@ -502,20 +488,20 @@ async function createGroupBooking(booking, participants) {
 async function getAllGroupBookings() {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(groupBookings).orderBy((0, import_drizzle_orm.desc)(groupBookings.createdAt));
+  return db.select().from(groupBookings).orderBy(desc(groupBookings.createdAt));
 }
 async function getGroupBookingById(id) {
   const db = await getDb();
   if (!db) return void 0;
-  const [booking] = await db.select().from(groupBookings).where((0, import_drizzle_orm.eq)(groupBookings.id, id)).limit(1);
+  const [booking] = await db.select().from(groupBookings).where(eq(groupBookings.id, id)).limit(1);
   if (!booking) return void 0;
-  const participants = await db.select().from(groupBookingParticipants).where((0, import_drizzle_orm.eq)(groupBookingParticipants.groupBookingId, id));
+  const participants = await db.select().from(groupBookingParticipants).where(eq(groupBookingParticipants.groupBookingId, id));
   return { ...booking, participants };
 }
 async function updateGroupBookingStatus(id, status) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await db.update(groupBookings).set({ status }).where((0, import_drizzle_orm.eq)(groupBookings.id, id));
+  await db.update(groupBookings).set({ status }).where(eq(groupBookings.id, id));
 }
 async function completeGroupBooking(bookingId, staffId) {
   const db = await getDb();
@@ -548,9 +534,9 @@ async function completeGroupBooking(bookingId, staffId) {
     await db.update(groupBookingParticipants).set({
       lumensAwarded: lumens,
       transactionId: txId
-    }).where((0, import_drizzle_orm.eq)(groupBookingParticipants.id, participant.id));
+    }).where(eq(groupBookingParticipants.id, participant.id));
   }
-  await db.update(groupBookings).set({ status: "completed" }).where((0, import_drizzle_orm.eq)(groupBookings.id, bookingId));
+  await db.update(groupBookings).set({ status: "completed" }).where(eq(groupBookings.id, bookingId));
 }
 async function createAppointment(data) {
   const db = await getDb();
@@ -561,18 +547,18 @@ async function createAppointment(data) {
 async function getAppointmentsByMember(memberId) {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(appointments).where((0, import_drizzle_orm.eq)(appointments.memberId, memberId)).orderBy((0, import_drizzle_orm.desc)(appointments.appointmentDate), (0, import_drizzle_orm.desc)(appointments.timeSlot));
+  return db.select().from(appointments).where(eq(appointments.memberId, memberId)).orderBy(desc(appointments.appointmentDate), desc(appointments.timeSlot));
 }
 async function getAppointmentById(id) {
   const db = await getDb();
   if (!db) return void 0;
-  const result = await db.select().from(appointments).where((0, import_drizzle_orm.eq)(appointments.id, id)).limit(1);
+  const result = await db.select().from(appointments).where(eq(appointments.id, id)).limit(1);
   return result.length > 0 ? result[0] : void 0;
 }
 async function cancelAppointment(id) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await db.update(appointments).set({ status: "cancelled" }).where((0, import_drizzle_orm.eq)(appointments.id, id));
+  await db.update(appointments).set({ status: "cancelled" }).where(eq(appointments.id, id));
 }
 async function getAllAppointments(limit = 200) {
   const db = await getDb();
@@ -595,7 +581,7 @@ async function getAllAppointments(limit = 200) {
     memberLastName: members.lastName,
     memberEmail: members.email,
     memberPhone: members.phone
-  }).from(appointments).leftJoin(members, (0, import_drizzle_orm.eq)(appointments.memberId, members.id)).orderBy((0, import_drizzle_orm.desc)(appointments.appointmentDate), (0, import_drizzle_orm.desc)(appointments.timeSlot)).limit(limit);
+  }).from(appointments).leftJoin(members, eq(appointments.memberId, members.id)).orderBy(desc(appointments.appointmentDate), desc(appointments.timeSlot)).limit(limit);
   return rows;
 }
 async function updateAppointmentStatus(id, status, staffNotes) {
@@ -603,7 +589,7 @@ async function updateAppointmentStatus(id, status, staffNotes) {
   if (!db) return;
   const updateData = { status };
   if (staffNotes !== void 0) updateData.notes = staffNotes;
-  await db.update(appointments).set(updateData).where((0, import_drizzle_orm.eq)(appointments.id, id));
+  await db.update(appointments).set(updateData).where(eq(appointments.id, id));
 }
 async function createAuditLog(data) {
   try {
@@ -613,6 +599,18 @@ async function createAuditLog(data) {
   } catch (err) {
     console.warn("[AuditLog] Failed to write audit log:", err);
   }
+}
+async function clearAllMemberData() {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(groupBookingParticipants);
+  await db.delete(groupBookings);
+  await db.delete(appointments);
+  await db.delete(transactions);
+  await db.delete(auditLogs);
+  await db.delete(members);
+  await db.delete(users);
+  await db.delete(corporateGroups);
 }
 async function getAuditLogs(opts) {
   const db = await getDb();
@@ -627,15 +625,15 @@ async function getAuditLogs(opts) {
     dateTo
   } = opts ?? {};
   const conditions = [];
-  if (action) conditions.push((0, import_drizzle_orm.eq)(auditLogs.action, action));
-  if (entityType) conditions.push((0, import_drizzle_orm.eq)(auditLogs.entityType, entityType));
-  if (staffId) conditions.push((0, import_drizzle_orm.eq)(auditLogs.staffId, staffId));
-  if (dateFrom) conditions.push(import_drizzle_orm.sql`DATE(${auditLogs.createdAt}) >= ${dateFrom}`);
-  if (dateTo) conditions.push(import_drizzle_orm.sql`DATE(${auditLogs.createdAt}) <= ${dateTo}`);
-  const whereClause = conditions.length > 0 ? (0, import_drizzle_orm.and)(...conditions) : void 0;
+  if (action) conditions.push(eq(auditLogs.action, action));
+  if (entityType) conditions.push(eq(auditLogs.entityType, entityType));
+  if (staffId) conditions.push(eq(auditLogs.staffId, staffId));
+  if (dateFrom) conditions.push(sql`DATE(${auditLogs.createdAt}) >= ${dateFrom}`);
+  if (dateTo) conditions.push(sql`DATE(${auditLogs.createdAt}) <= ${dateTo}`);
+  const whereClause = conditions.length > 0 ? and(...conditions) : void 0;
   const [rows, countResult] = await Promise.all([
-    db.select().from(auditLogs).where(whereClause).orderBy((0, import_drizzle_orm.desc)(auditLogs.createdAt)).limit(limit).offset(offset),
-    db.select({ count: import_drizzle_orm.sql`count(*)` }).from(auditLogs).where(whereClause)
+    db.select().from(auditLogs).where(whereClause).orderBy(desc(auditLogs.createdAt)).limit(limit).offset(offset),
+    db.select({ count: sql`count(*)` }).from(auditLogs).where(whereClause)
   ]);
   return { rows, total: countResult[0]?.count ?? 0 };
 }
@@ -686,9 +684,9 @@ var HttpError = class extends Error {
 var ForbiddenError = (msg) => new HttpError(403, msg);
 
 // server/_core/sdk.ts
-var import_axios = __toESM(require("axios"));
-var import_cookie = require("cookie");
-var import_jose = require("jose");
+import axios from "axios";
+import { parse as parseCookieHeader } from "cookie";
+import { SignJWT, jwtVerify } from "jose";
 var isNonEmptyString = (value) => typeof value === "string" && value.length > 0;
 var EXCHANGE_TOKEN_PATH = `/webdev.v1.WebDevAuthPublicService/ExchangeToken`;
 var GET_USER_INFO_PATH = `/webdev.v1.WebDevAuthPublicService/GetUserInfo`;
@@ -724,7 +722,7 @@ var OAuthService = class {
     return data;
   }
 };
-var createOAuthHttpClient = () => import_axios.default.create({
+var createOAuthHttpClient = () => axios.create({
   baseURL: ENV.oAuthServerUrl,
   timeout: AXIOS_TIMEOUT_MS
 });
@@ -779,7 +777,7 @@ var SDKServer = class {
     if (!cookieHeader) {
       return /* @__PURE__ */ new Map();
     }
-    const parsed = (0, import_cookie.parse)(cookieHeader);
+    const parsed = parseCookieHeader(cookieHeader);
     return new Map(Object.entries(parsed));
   }
   getSessionSecret() {
@@ -806,7 +804,7 @@ var SDKServer = class {
     const expiresInMs = options.expiresInMs ?? ONE_YEAR_MS;
     const expirationSeconds = Math.floor((issuedAt + expiresInMs) / 1e3);
     const secretKey = this.getSessionSecret();
-    return new import_jose.SignJWT({
+    return new SignJWT({
       openId: payload.openId,
       appId: payload.appId,
       name: payload.name
@@ -819,7 +817,7 @@ var SDKServer = class {
     }
     try {
       const secretKey = this.getSessionSecret();
-      const { payload } = await (0, import_jose.jwtVerify)(cookieValue, secretKey, {
+      const { payload } = await jwtVerify(cookieValue, secretKey, {
         algorithms: ["HS256"]
       });
       const { openId, appId, name } = payload;
@@ -1020,16 +1018,16 @@ function registerOAuthRoutes(app) {
 }
 
 // server/routers.ts
-var import_server3 = require("@trpc/server");
-var bcrypt = __toESM(require("bcryptjs"));
-var jose = __toESM(require("jose"));
-var import_zod2 = require("zod");
+import { TRPCError as TRPCError3 } from "@trpc/server";
+import * as bcrypt from "bcryptjs";
+import * as jose from "jose";
+import { z as z2 } from "zod";
 
 // server/_core/systemRouter.ts
-var import_zod = require("zod");
+import { z } from "zod";
 
 // server/_core/notification.ts
-var import_server = require("@trpc/server");
+import { TRPCError } from "@trpc/server";
 var TITLE_MAX_LENGTH = 1200;
 var CONTENT_MAX_LENGTH = 2e4;
 var trimValue = (value) => value.trim();
@@ -1040,13 +1038,13 @@ var buildEndpointUrl = (baseUrl) => {
 };
 var validatePayload = (input) => {
   if (!isNonEmptyString2(input.title)) {
-    throw new import_server.TRPCError({
+    throw new TRPCError({
       code: "BAD_REQUEST",
       message: "Notification title is required."
     });
   }
   if (!isNonEmptyString2(input.content)) {
-    throw new import_server.TRPCError({
+    throw new TRPCError({
       code: "BAD_REQUEST",
       message: "Notification content is required."
     });
@@ -1054,13 +1052,13 @@ var validatePayload = (input) => {
   const title = trimValue(input.title);
   const content = trimValue(input.content);
   if (title.length > TITLE_MAX_LENGTH) {
-    throw new import_server.TRPCError({
+    throw new TRPCError({
       code: "BAD_REQUEST",
       message: `Notification title must be at most ${TITLE_MAX_LENGTH} characters.`
     });
   }
   if (content.length > CONTENT_MAX_LENGTH) {
-    throw new import_server.TRPCError({
+    throw new TRPCError({
       code: "BAD_REQUEST",
       message: `Notification content must be at most ${CONTENT_MAX_LENGTH} characters.`
     });
@@ -1070,13 +1068,13 @@ var validatePayload = (input) => {
 async function notifyOwner(payload) {
   const { title, content } = validatePayload(payload);
   if (!ENV.forgeApiUrl) {
-    throw new import_server.TRPCError({
+    throw new TRPCError({
       code: "INTERNAL_SERVER_ERROR",
       message: "Notification service URL is not configured."
     });
   }
   if (!ENV.forgeApiKey) {
-    throw new import_server.TRPCError({
+    throw new TRPCError({
       code: "INTERNAL_SERVER_ERROR",
       message: "Notification service API key is not configured."
     });
@@ -1108,17 +1106,17 @@ async function notifyOwner(payload) {
 }
 
 // server/_core/trpc.ts
-var import_server2 = require("@trpc/server");
-var import_superjson = __toESM(require("superjson"));
-var t = import_server2.initTRPC.context().create({
-  transformer: import_superjson.default
+import { initTRPC, TRPCError as TRPCError2 } from "@trpc/server";
+import superjson from "superjson";
+var t = initTRPC.context().create({
+  transformer: superjson
 });
 var router = t.router;
 var publicProcedure = t.procedure;
 var requireUser = t.middleware(async (opts) => {
   const { ctx, next } = opts;
   if (!ctx.user) {
-    throw new import_server2.TRPCError({ code: "UNAUTHORIZED", message: UNAUTHED_ERR_MSG });
+    throw new TRPCError2({ code: "UNAUTHORIZED", message: UNAUTHED_ERR_MSG });
   }
   return next({
     ctx: {
@@ -1132,7 +1130,7 @@ var adminProcedure = t.procedure.use(
   t.middleware(async (opts) => {
     const { ctx, next } = opts;
     if (!ctx.user || ctx.user.role !== "admin") {
-      throw new import_server2.TRPCError({ code: "FORBIDDEN", message: NOT_ADMIN_ERR_MSG });
+      throw new TRPCError2({ code: "FORBIDDEN", message: NOT_ADMIN_ERR_MSG });
     }
     return next({
       ctx: {
@@ -1146,16 +1144,16 @@ var adminProcedure = t.procedure.use(
 // server/_core/systemRouter.ts
 var systemRouter = router({
   health: publicProcedure.input(
-    import_zod.z.object({
-      timestamp: import_zod.z.number().min(0, "timestamp cannot be negative")
+    z.object({
+      timestamp: z.number().min(0, "timestamp cannot be negative")
     })
   ).query(() => ({
     ok: true
   })),
   notifyOwner: adminProcedure.input(
-    import_zod.z.object({
-      title: import_zod.z.string().min(1, "title is required"),
-      content: import_zod.z.string().min(1, "content is required")
+    z.object({
+      title: z.string().min(1, "title is required"),
+      content: z.string().min(1, "content is required")
     })
   ).mutation(async ({ input }) => {
     const delivered = await notifyOwner(input);
@@ -1215,11 +1213,11 @@ var appRouter = router({
   }),
   // ── Staff Auth (admin portal) ───────────────────────────────────────────────
   staff: router({
-    login: publicProcedure.input(import_zod2.z.object({ username: import_zod2.z.string(), password: import_zod2.z.string() })).mutation(async ({ input }) => {
+    login: publicProcedure.input(z2.object({ username: z2.string(), password: z2.string() })).mutation(async ({ input }) => {
       const staff = await getStaffByUsername(input.username);
-      if (!staff) throw new import_server3.TRPCError({ code: "UNAUTHORIZED", message: "Invalid credentials" });
+      if (!staff) throw new TRPCError3({ code: "UNAUTHORIZED", message: "Invalid credentials" });
       const valid = await bcrypt.compare(input.password, staff.passwordHash);
-      if (!valid) throw new import_server3.TRPCError({ code: "UNAUTHORIZED", message: "Invalid credentials" });
+      if (!valid) throw new TRPCError3({ code: "UNAUTHORIZED", message: "Invalid credentials" });
       await updateStaffLastLogin(staff.id);
       const token = await signStaffToken(staff.id, staff.username, staff.role);
       return {
@@ -1233,11 +1231,11 @@ var appRouter = router({
         }
       };
     }),
-    verify: publicProcedure.input(import_zod2.z.object({ token: import_zod2.z.string() })).query(async ({ input }) => {
+    verify: publicProcedure.input(z2.object({ token: z2.string() })).query(async ({ input }) => {
       const payload = await verifyStaffToken(input.token);
-      if (!payload) throw new import_server3.TRPCError({ code: "UNAUTHORIZED", message: "Invalid or expired token" });
+      if (!payload) throw new TRPCError3({ code: "UNAUTHORIZED", message: "Invalid or expired token" });
       const staff = await getStaffById(payload.staffId);
-      if (!staff || !staff.isActive) throw new import_server3.TRPCError({ code: "UNAUTHORIZED", message: "Staff account not found" });
+      if (!staff || !staff.isActive) throw new TRPCError3({ code: "UNAUTHORIZED", message: "Staff account not found" });
       return {
         id: staff.id,
         username: staff.username,
@@ -1250,18 +1248,18 @@ var appRouter = router({
       return getAllStaff();
     }),
     // Admin only: create a new staff account
-    create: publicProcedure.input(import_zod2.z.object({
-      token: import_zod2.z.string(),
-      username: import_zod2.z.string().min(3).max(50),
-      password: import_zod2.z.string().min(8),
-      fullName: import_zod2.z.string().min(1),
-      role: import_zod2.z.enum(["admin", "manager", "clinic_assistant", "healthscreen_assistant"]),
-      clinicId: import_zod2.z.string().optional()
+    create: publicProcedure.input(z2.object({
+      token: z2.string(),
+      username: z2.string().min(3).max(50),
+      password: z2.string().min(8),
+      fullName: z2.string().min(1),
+      role: z2.enum(["admin", "manager", "clinic_assistant", "healthscreen_assistant"]),
+      clinicId: z2.string().optional()
     })).mutation(async ({ input }) => {
       const payload = await verifyStaffToken(input.token);
-      if (!payload || payload.role !== "admin") throw new import_server3.TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+      if (!payload || payload.role !== "admin") throw new TRPCError3({ code: "FORBIDDEN", message: "Admin access required" });
       const existing = await getStaffByUsername(input.username);
-      if (existing) throw new import_server3.TRPCError({ code: "CONFLICT", message: "Username already taken" });
+      if (existing) throw new TRPCError3({ code: "CONFLICT", message: "Username already taken" });
       const passwordHash = await bcrypt.hash(input.password, 10);
       const id = await createStaffAccount({
         username: input.username,
@@ -1283,16 +1281,16 @@ var appRouter = router({
       return { id };
     }),
     // Admin only: update staff account details
-    update: publicProcedure.input(import_zod2.z.object({
-      token: import_zod2.z.string(),
-      id: import_zod2.z.number(),
-      fullName: import_zod2.z.string().min(1).optional(),
-      role: import_zod2.z.enum(["admin", "manager", "clinic_assistant", "healthscreen_assistant"]).optional(),
-      clinicId: import_zod2.z.string().nullable().optional(),
-      isActive: import_zod2.z.boolean().optional()
+    update: publicProcedure.input(z2.object({
+      token: z2.string(),
+      id: z2.number(),
+      fullName: z2.string().min(1).optional(),
+      role: z2.enum(["admin", "manager", "clinic_assistant", "healthscreen_assistant"]).optional(),
+      clinicId: z2.string().nullable().optional(),
+      isActive: z2.boolean().optional()
     })).mutation(async ({ input }) => {
       const payload = await verifyStaffToken(input.token);
-      if (!payload || payload.role !== "admin") throw new import_server3.TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+      if (!payload || payload.role !== "admin") throw new TRPCError3({ code: "FORBIDDEN", message: "Admin access required" });
       const { token: _t, id, ...updates } = input;
       const filteredUpdates = {};
       if (updates.fullName !== void 0) filteredUpdates.fullName = updates.fullName;
@@ -1312,13 +1310,13 @@ var appRouter = router({
       return { success: true };
     }),
     // Admin only: reset a staff member's password
-    resetPassword: publicProcedure.input(import_zod2.z.object({
-      token: import_zod2.z.string(),
-      id: import_zod2.z.number(),
-      newPassword: import_zod2.z.string().min(8)
+    resetPassword: publicProcedure.input(z2.object({
+      token: z2.string(),
+      id: z2.number(),
+      newPassword: z2.string().min(8)
     })).mutation(async ({ input }) => {
       const payload = await verifyStaffToken(input.token);
-      if (!payload || payload.role !== "admin") throw new import_server3.TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+      if (!payload || payload.role !== "admin") throw new TRPCError3({ code: "FORBIDDEN", message: "Admin access required" });
       const passwordHash = await bcrypt.hash(input.newPassword, 10);
       await updateStaffPassword(input.id, passwordHash);
       await createAuditLog({
@@ -1340,13 +1338,13 @@ var appRouter = router({
       return getMemberByUserId(ctx.user.id);
     }),
     // Mobile: create/register member profile
-    register: protectedProcedure.input(import_zod2.z.object({
-      firstName: import_zod2.z.string().min(1),
-      lastName: import_zod2.z.string().min(1),
-      email: import_zod2.z.string().email(),
-      phone: import_zod2.z.string().optional(),
-      dateOfBirth: import_zod2.z.string().optional(),
-      gender: import_zod2.z.enum(["male", "female", "other"]).optional()
+    register: protectedProcedure.input(z2.object({
+      firstName: z2.string().min(1),
+      lastName: z2.string().min(1),
+      email: z2.string().email(),
+      phone: z2.string().optional(),
+      dateOfBirth: z2.string().optional(),
+      gender: z2.enum(["male", "female", "other"]).optional()
     })).mutation(async ({ ctx, input }) => {
       const existing = await getMemberByUserId(ctx.user.id);
       if (existing) return existing;
@@ -1367,36 +1365,36 @@ var appRouter = router({
       return getMemberById(id);
     }),
     // Mobile: save Expo push token for this member
-    registerPushToken: protectedProcedure.input(import_zod2.z.object({ token: import_zod2.z.string().min(1) })).mutation(async ({ ctx, input }) => {
+    registerPushToken: protectedProcedure.input(z2.object({ token: z2.string().min(1) })).mutation(async ({ ctx, input }) => {
       const member = await getMemberByUserId(ctx.user.id);
       if (!member) throw new Error("Member not found");
       await savePushToken(member.id, input.token);
       return { ok: true };
     }),
     // Admin: list all members
-    listAll: publicProcedure.input(import_zod2.z.object({ search: import_zod2.z.string().optional() })).query(async ({ input }) => {
+    listAll: publicProcedure.input(z2.object({ search: z2.string().optional() })).query(async ({ input }) => {
       return getAllMembers(input.search);
     }),
     // Admin: get member by ID
-    getById: publicProcedure.input(import_zod2.z.object({ id: import_zod2.z.number() })).query(async ({ input }) => {
+    getById: publicProcedure.input(z2.object({ id: z2.number() })).query(async ({ input }) => {
       return getMemberById(input.id);
     }),
     // Admin: get member by number
-    getByNumber: publicProcedure.input(import_zod2.z.object({ memberNumber: import_zod2.z.string() })).query(async ({ input }) => {
+    getByNumber: publicProcedure.input(z2.object({ memberNumber: z2.string() })).query(async ({ input }) => {
       return getMemberByNumber(input.memberNumber);
     }),
     // Admin: create a new member directly (no OAuth required)
-    adminCreate: publicProcedure.input(import_zod2.z.object({
-      firstName: import_zod2.z.string().min(1),
-      lastName: import_zod2.z.string().min(1),
-      email: import_zod2.z.string().email(),
-      phone: import_zod2.z.string().optional(),
-      dateOfBirth: import_zod2.z.string().optional(),
-      gender: import_zod2.z.enum(["male", "female", "other"]).optional(),
-      isCorporate: import_zod2.z.boolean().optional(),
-      corporateGroupId: import_zod2.z.number().nullable().optional(),
-      staffId: import_zod2.z.number().optional(),
-      staffName: import_zod2.z.string().optional()
+    adminCreate: publicProcedure.input(z2.object({
+      firstName: z2.string().min(1),
+      lastName: z2.string().min(1),
+      email: z2.string().email(),
+      phone: z2.string().optional(),
+      dateOfBirth: z2.string().optional(),
+      gender: z2.enum(["male", "female", "other"]).optional(),
+      isCorporate: z2.boolean().optional(),
+      corporateGroupId: z2.number().nullable().optional(),
+      staffId: z2.number().optional(),
+      staffName: z2.string().optional()
     })).mutation(async ({ input }) => {
       const userId = await createAdminUser(input.email, input.firstName + " " + input.lastName);
       const id = await createMember({
@@ -1427,10 +1425,10 @@ var appRouter = router({
       return newMember;
     }),
     // Admin: delete a member (Admin only — enforced in portal UI)
-    delete: publicProcedure.input(import_zod2.z.object({
-      id: import_zod2.z.number(),
-      staffId: import_zod2.z.number().optional(),
-      staffName: import_zod2.z.string().optional()
+    delete: publicProcedure.input(z2.object({
+      id: z2.number(),
+      staffId: z2.number().optional(),
+      staffName: z2.string().optional()
     })).mutation(async ({ input }) => {
       const member = await getMemberById(input.id);
       await deleteMember(input.id);
@@ -1446,14 +1444,14 @@ var appRouter = router({
       return { ok: true };
     }),
     // Admin: update member (e.g. set corporate flag)
-    update: publicProcedure.input(import_zod2.z.object({
-      id: import_zod2.z.number(),
-      isCorporate: import_zod2.z.boolean().optional(),
-      corporateGroupId: import_zod2.z.number().nullable().optional(),
-      isActive: import_zod2.z.boolean().optional(),
-      tier: import_zod2.z.enum(["ember", "radiance", "solar", "solaris_elite"]).optional(),
-      staffId: import_zod2.z.number().optional(),
-      staffName: import_zod2.z.string().optional()
+    update: publicProcedure.input(z2.object({
+      id: z2.number(),
+      isCorporate: z2.boolean().optional(),
+      corporateGroupId: z2.number().nullable().optional(),
+      isActive: z2.boolean().optional(),
+      tier: z2.enum(["ember", "radiance", "solar", "solaris_elite"]).optional(),
+      staffId: z2.number().optional(),
+      staffName: z2.string().optional()
     })).mutation(async ({ input }) => {
       const { id, staffId, staffName, ...data } = input;
       const before = await getMemberById(id);
@@ -1480,19 +1478,19 @@ var appRouter = router({
       return getTransactionsByMember(member.id);
     }),
     // Admin: record a package purchase (auto-populates Lumens)
-    recordPurchase: publicProcedure.input(import_zod2.z.object({
-      memberId: import_zod2.z.number(),
-      packageId: import_zod2.z.string(),
-      packageName: import_zod2.z.string(),
-      amountPaid: import_zod2.z.number(),
-      lumensEarned: import_zod2.z.number(),
-      lumensRate: import_zod2.z.number(),
-      isCorporateRate: import_zod2.z.boolean().default(false),
-      clinicId: import_zod2.z.string(),
-      clinicName: import_zod2.z.string(),
-      staffId: import_zod2.z.number().optional(),
-      staffName: import_zod2.z.string().optional(),
-      notes: import_zod2.z.string().optional()
+    recordPurchase: publicProcedure.input(z2.object({
+      memberId: z2.number(),
+      packageId: z2.string(),
+      packageName: z2.string(),
+      amountPaid: z2.number(),
+      lumensEarned: z2.number(),
+      lumensRate: z2.number(),
+      isCorporateRate: z2.boolean().default(false),
+      clinicId: z2.string(),
+      clinicName: z2.string(),
+      staffId: z2.number().optional(),
+      staffName: z2.string().optional(),
+      notes: z2.string().optional()
     })).mutation(async ({ input }) => {
       const expiryDate = /* @__PURE__ */ new Date();
       expiryDate.setDate(expiryDate.getDate() + 365);
@@ -1526,21 +1524,21 @@ var appRouter = router({
       return { transactionId: txId };
     }),
     // Admin: record a redemption
-    recordRedemption: publicProcedure.input(import_zod2.z.object({
-      memberId: import_zod2.z.number(),
-      rewardId: import_zod2.z.string(),
-      rewardName: import_zod2.z.string(),
-      lumensRedeemed: import_zod2.z.number(),
-      clinicId: import_zod2.z.string(),
-      clinicName: import_zod2.z.string(),
-      staffId: import_zod2.z.number().optional(),
-      staffName: import_zod2.z.string().optional(),
-      notes: import_zod2.z.string().optional()
+    recordRedemption: publicProcedure.input(z2.object({
+      memberId: z2.number(),
+      rewardId: z2.string(),
+      rewardName: z2.string(),
+      lumensRedeemed: z2.number(),
+      clinicId: z2.string(),
+      clinicName: z2.string(),
+      staffId: z2.number().optional(),
+      staffName: z2.string().optional(),
+      notes: z2.string().optional()
     })).mutation(async ({ input }) => {
       const member = await getMemberById(input.memberId);
-      if (!member) throw new import_server3.TRPCError({ code: "NOT_FOUND", message: "Member not found" });
+      if (!member) throw new TRPCError3({ code: "NOT_FOUND", message: "Member not found" });
       if (member.lumensBalance < input.lumensRedeemed) {
-        throw new import_server3.TRPCError({ code: "BAD_REQUEST", message: "Insufficient Lumens balance" });
+        throw new TRPCError3({ code: "BAD_REQUEST", message: "Insufficient Lumens balance" });
       }
       const txId = await createTransaction({
         memberId: input.memberId,
@@ -1574,11 +1572,11 @@ var appRouter = router({
       return all.filter((tx) => tx.type === "redeem");
     }),
     // Admin: all transactions
-    listAll: publicProcedure.input(import_zod2.z.object({ limit: import_zod2.z.number().default(100) })).query(async ({ input }) => {
+    listAll: publicProcedure.input(z2.object({ limit: z2.number().default(100) })).query(async ({ input }) => {
       return getAllTransactions(input.limit);
     }),
     // Admin: by member
-    byMember: publicProcedure.input(import_zod2.z.object({ memberId: import_zod2.z.number() })).query(async ({ input }) => {
+    byMember: publicProcedure.input(z2.object({ memberId: z2.number() })).query(async ({ input }) => {
       return getTransactionsByMember(input.memberId);
     })
   }),
@@ -1596,12 +1594,12 @@ var appRouter = router({
     listAll: publicProcedure.query(async () => {
       return getAllCorporateGroups();
     }),
-    create: publicProcedure.input(import_zod2.z.object({
-      name: import_zod2.z.string().min(1),
-      contactPerson: import_zod2.z.string().optional(),
-      contactEmail: import_zod2.z.string().email().optional(),
-      contactPhone: import_zod2.z.string().optional(),
-      notes: import_zod2.z.string().optional()
+    create: publicProcedure.input(z2.object({
+      name: z2.string().min(1),
+      contactPerson: z2.string().optional(),
+      contactEmail: z2.string().email().optional(),
+      contactPhone: z2.string().optional(),
+      notes: z2.string().optional()
     })).mutation(async ({ input }) => {
       const id = await createCorporateGroup({ ...input, isActive: true });
       return getCorporateGroupById(id);
@@ -1616,19 +1614,19 @@ var appRouter = router({
       return getAppointmentsByMember(member.id);
     }),
     // Mobile: create appointment
-    create: protectedProcedure.input(import_zod2.z.object({
-      packageId: import_zod2.z.string(),
-      packageName: import_zod2.z.string(),
-      clinicId: import_zod2.z.string(),
-      clinicName: import_zod2.z.string(),
-      appointmentDate: import_zod2.z.string(),
+    create: protectedProcedure.input(z2.object({
+      packageId: z2.string(),
+      packageName: z2.string(),
+      clinicId: z2.string(),
+      clinicName: z2.string(),
+      appointmentDate: z2.string(),
       // YYYY-MM-DD
-      timeSlot: import_zod2.z.string(),
+      timeSlot: z2.string(),
       // HH:MM
-      notes: import_zod2.z.string().optional()
+      notes: z2.string().optional()
     })).mutation(async ({ ctx, input }) => {
       const member = await getMemberByUserId(ctx.user.id);
-      if (!member) throw new import_server3.TRPCError({ code: "NOT_FOUND", message: "Member profile not found" });
+      if (!member) throw new TRPCError3({ code: "NOT_FOUND", message: "Member profile not found" });
       const id = await createAppointment({
         memberId: member.id,
         packageId: input.packageId,
@@ -1643,30 +1641,30 @@ var appRouter = router({
       return getAppointmentById(id);
     }),
     // Mobile: cancel own appointment
-    cancel: protectedProcedure.input(import_zod2.z.object({ id: import_zod2.z.number() })).mutation(async ({ ctx, input }) => {
+    cancel: protectedProcedure.input(z2.object({ id: z2.number() })).mutation(async ({ ctx, input }) => {
       const member = await getMemberByUserId(ctx.user.id);
-      if (!member) throw new import_server3.TRPCError({ code: "NOT_FOUND", message: "Member profile not found" });
+      if (!member) throw new TRPCError3({ code: "NOT_FOUND", message: "Member profile not found" });
       const appt = await getAppointmentById(input.id);
-      if (!appt) throw new import_server3.TRPCError({ code: "NOT_FOUND", message: "Appointment not found" });
-      if (appt.memberId !== member.id) throw new import_server3.TRPCError({ code: "FORBIDDEN", message: "Not your appointment" });
-      if (appt.status !== "upcoming") throw new import_server3.TRPCError({ code: "BAD_REQUEST", message: "Only upcoming appointments can be cancelled" });
+      if (!appt) throw new TRPCError3({ code: "NOT_FOUND", message: "Appointment not found" });
+      if (appt.memberId !== member.id) throw new TRPCError3({ code: "FORBIDDEN", message: "Not your appointment" });
+      if (appt.status !== "upcoming") throw new TRPCError3({ code: "BAD_REQUEST", message: "Only upcoming appointments can be cancelled" });
       await cancelAppointment(input.id);
       return { success: true };
     }),
     // Admin: list all appointments with member info
-    listAll: publicProcedure.input(import_zod2.z.object({ limit: import_zod2.z.number().default(500) })).query(async ({ input }) => {
+    listAll: publicProcedure.input(z2.object({ limit: z2.number().default(500) })).query(async ({ input }) => {
       return getAllAppointments(input.limit);
     }),
     // Admin: update appointment status (completed / no-show / cancelled / upcoming)
-    adminUpdateStatus: publicProcedure.input(import_zod2.z.object({
-      id: import_zod2.z.number(),
-      status: import_zod2.z.enum(["upcoming", "completed", "cancelled", "no-show"]),
-      staffNotes: import_zod2.z.string().optional(),
-      staffId: import_zod2.z.number().optional(),
-      staffName: import_zod2.z.string().optional()
+    adminUpdateStatus: publicProcedure.input(z2.object({
+      id: z2.number(),
+      status: z2.enum(["upcoming", "completed", "cancelled", "no-show"]),
+      staffNotes: z2.string().optional(),
+      staffId: z2.number().optional(),
+      staffName: z2.string().optional()
     })).mutation(async ({ input }) => {
       const appt = await getAppointmentById(input.id);
-      if (!appt) throw new import_server3.TRPCError({ code: "NOT_FOUND", message: "Appointment not found" });
+      if (!appt) throw new TRPCError3({ code: "NOT_FOUND", message: "Appointment not found" });
       await updateAppointmentStatus(input.id, input.status, input.staffNotes);
       await createAuditLog({
         staffId: input.staffId ?? null,
@@ -1685,27 +1683,27 @@ var appRouter = router({
     listAll: publicProcedure.query(async () => {
       return getAllGroupBookings();
     }),
-    getById: publicProcedure.input(import_zod2.z.object({ id: import_zod2.z.number() })).query(async ({ input }) => {
+    getById: publicProcedure.input(z2.object({ id: z2.number() })).query(async ({ input }) => {
       return getGroupBookingById(input.id);
     }),
-    create: publicProcedure.input(import_zod2.z.object({
-      corporateGroupId: import_zod2.z.number(),
-      packageId: import_zod2.z.string(),
-      packageName: import_zod2.z.string(),
-      clinicId: import_zod2.z.string(),
-      clinicName: import_zod2.z.string(),
-      bookingDate: import_zod2.z.string(),
-      bookingTime: import_zod2.z.string(),
-      headcount: import_zod2.z.number().min(1),
-      totalAmount: import_zod2.z.number(),
-      totalLumens: import_zod2.z.number(),
-      notes: import_zod2.z.string().optional(),
-      staffId: import_zod2.z.number().optional(),
-      participants: import_zod2.z.array(import_zod2.z.object({
-        memberId: import_zod2.z.number().optional(),
-        memberNumber: import_zod2.z.string().optional(),
-        participantName: import_zod2.z.string(),
-        participantEmail: import_zod2.z.string().optional()
+    create: publicProcedure.input(z2.object({
+      corporateGroupId: z2.number(),
+      packageId: z2.string(),
+      packageName: z2.string(),
+      clinicId: z2.string(),
+      clinicName: z2.string(),
+      bookingDate: z2.string(),
+      bookingTime: z2.string(),
+      headcount: z2.number().min(1),
+      totalAmount: z2.number(),
+      totalLumens: z2.number(),
+      notes: z2.string().optional(),
+      staffId: z2.number().optional(),
+      participants: z2.array(z2.object({
+        memberId: z2.number().optional(),
+        memberNumber: z2.string().optional(),
+        participantName: z2.string(),
+        participantEmail: z2.string().optional()
       }))
     })).mutation(async ({ input }) => {
       const { participants, ...bookingData } = input;
@@ -1723,28 +1721,36 @@ var appRouter = router({
       );
       return getGroupBookingById(id);
     }),
-    updateStatus: publicProcedure.input(import_zod2.z.object({
-      id: import_zod2.z.number(),
-      status: import_zod2.z.enum(["pending", "confirmed", "completed", "cancelled"])
+    updateStatus: publicProcedure.input(z2.object({
+      id: z2.number(),
+      status: z2.enum(["pending", "confirmed", "completed", "cancelled"])
     })).mutation(async ({ input }) => {
       await updateGroupBookingStatus(input.id, input.status);
       return getGroupBookingById(input.id);
     }),
-    complete: publicProcedure.input(import_zod2.z.object({ id: import_zod2.z.number(), staffId: import_zod2.z.number() })).mutation(async ({ input }) => {
+    complete: publicProcedure.input(z2.object({ id: z2.number(), staffId: z2.number() })).mutation(async ({ input }) => {
       await completeGroupBooking(input.id, input.staffId);
       return getGroupBookingById(input.id);
     })
   }),
   // ── Audit Logs ───────────────────────────────────────────────────────────────────────────────
+  admin: router({
+    clearAllData: publicProcedure.input(z2.object({ token: z2.string() })).mutation(async ({ input }) => {
+      const payload = await verifyStaffToken(input.token);
+      if (!payload || payload.role !== "admin") throw new TRPCError3({ code: "FORBIDDEN", message: "Admin access required" });
+      await clearAllMemberData();
+      return { success: true };
+    })
+  }),
   audit: router({
-    list: publicProcedure.input(import_zod2.z.object({
-      limit: import_zod2.z.number().default(50),
-      offset: import_zod2.z.number().default(0),
-      action: import_zod2.z.string().optional(),
-      entityType: import_zod2.z.string().optional(),
-      staffId: import_zod2.z.number().optional(),
-      dateFrom: import_zod2.z.string().optional(),
-      dateTo: import_zod2.z.string().optional()
+    list: publicProcedure.input(z2.object({
+      limit: z2.number().default(50),
+      offset: z2.number().default(0),
+      action: z2.string().optional(),
+      entityType: z2.string().optional(),
+      staffId: z2.number().optional(),
+      dateFrom: z2.string().optional(),
+      dateTo: z2.string().optional()
     })).query(async ({ input }) => {
       return getAuditLogs(input);
     })
@@ -1769,7 +1775,7 @@ async function createContext(opts) {
 // server/_core/index.ts
 function isPortAvailable(port) {
   return new Promise((resolve) => {
-    const server = import_net.default.createServer();
+    const server = net.createServer();
     server.listen(port, () => {
       server.close(() => resolve(true));
     });
@@ -1785,8 +1791,8 @@ async function findAvailablePort(startPort = 3e3) {
   throw new Error(`No available port found starting from ${startPort}`);
 }
 async function startServer() {
-  const app = (0, import_express.default)();
-  const server = (0, import_http.createServer)(app);
+  const app = express();
+  const server = createServer(app);
   const allowedOrigins = process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(",") : ["http://localhost:5173", "http://localhost:8081"];
   app.use((req, res, next) => {
     const origin = req.headers.origin;
@@ -1807,15 +1813,15 @@ async function startServer() {
     }
     next();
   });
-  app.use(import_express.default.json({ limit: "50mb" }));
-  app.use(import_express.default.urlencoded({ limit: "50mb", extended: true }));
+  app.use(express.json({ limit: "50mb" }));
+  app.use(express.urlencoded({ limit: "50mb", extended: true }));
   registerOAuthRoutes(app);
   app.get("/api/health", (_req, res) => {
     res.json({ ok: true, timestamp: Date.now() });
   });
   app.use(
     "/api/trpc",
-    (0, import_express2.createExpressMiddleware)({
+    createExpressMiddleware({
       router: appRouter,
       createContext
     })

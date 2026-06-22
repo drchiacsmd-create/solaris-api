@@ -515,6 +515,20 @@ export async function createAuditLog(data: Omit<InsertAuditLog, "id" | "createdA
   }
 }
 
+export async function clearAllMemberData(): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  // Delete in dependency order to avoid FK violations
+  await db.delete(groupBookingParticipants);
+  await db.delete(groupBookings);
+  await db.delete(appointments);
+  await db.delete(transactions);
+  await db.delete(auditLogs);
+  await db.delete(members);
+  await db.delete(users);
+  await db.delete(corporateGroups);
+}
+
 export async function getAuditLogs(opts?: {
   limit?: number;
   offset?: number;

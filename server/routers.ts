@@ -678,6 +678,17 @@ export const appRouter = router({
   }),
 
   // ── Audit Logs ───────────────────────────────────────────────────────────────────────────────
+  admin: router({
+    clearAllData: publicProcedure
+      .input(z.object({ token: z.string() }))
+      .mutation(async ({ input }) => {
+        const payload = await verifyStaffToken(input.token);
+        if (!payload || payload.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+        await db.clearAllMemberData();
+        return { success: true };
+      }),
+  }),
+
   audit: router({
     list: publicProcedure
       .input(z.object({
