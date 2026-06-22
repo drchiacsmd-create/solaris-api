@@ -33,7 +33,7 @@ async function verifyStaffToken(token: string) {
 async function seedDefaultStaff() {
   const existing = await db.getStaffByUsername("admin");
   if (existing) return;
-  const hash = await bcrypt.hash("Solaris2026!", 10);
+  const hash = bcrypt.hashSync("Solaris2026!", 10);
   await db.createStaffAccount({
     username: "admin",
     passwordHash: hash,
@@ -42,7 +42,7 @@ async function seedDefaultStaff() {
     isActive: true,
   });
   // Seed a receptionist account
-  const hash2 = await bcrypt.hash("Staff2026!", 10);
+  const hash2 = bcrypt.hashSync("Staff2026!", 10);
   await db.createStaffAccount({
     username: "staff.central",
     passwordHash: hash2,
@@ -77,7 +77,7 @@ export const appRouter = router({
       .mutation(async ({ input }) => {
         const staff = await db.getStaffByUsername(input.username);
         if (!staff) throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid credentials" });
-        const valid = await bcrypt.compare(input.password, staff.passwordHash);
+        const valid = bcrypt.compareSync(input.password, staff.passwordHash);
         if (!valid) throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid credentials" });
         await db.updateStaffLastLogin(staff.id);
         const token = await signStaffToken(staff.id, staff.username, staff.role);
@@ -129,7 +129,7 @@ export const appRouter = router({
         // Check username uniqueness
         const existing = await db.getStaffByUsername(input.username);
         if (existing) throw new TRPCError({ code: "CONFLICT", message: "Username already taken" });
-        const passwordHash = await bcrypt.hash(input.password, 10);
+        const passwordHash = bcrypt.hashSync(input.password, 10);
         const id = await db.createStaffAccount({
           username: input.username,
           passwordHash,
@@ -192,7 +192,7 @@ export const appRouter = router({
       .mutation(async ({ input }) => {
         const payload = await verifyStaffToken(input.token);
         if (!payload || payload.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
-        const passwordHash = await bcrypt.hash(input.newPassword, 10);
+        const passwordHash = bcrypt.hashSync(input.newPassword, 10);
         await db.updateStaffPassword(input.id, passwordHash);
         await db.createAuditLog({
           staffId: payload.staffId,

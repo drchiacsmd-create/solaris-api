@@ -19126,7 +19126,7 @@ async function verifyStaffToken(token) {
 async function seedDefaultStaff() {
   const existing = await getStaffByUsername("admin");
   if (existing) return;
-  const hash2 = await import_bcryptjs.default.hash("Solaris2026!", 10);
+  const hash2 = import_bcryptjs.default.hashSync("Solaris2026!", 10);
   await createStaffAccount({
     username: "admin",
     passwordHash: hash2,
@@ -19134,7 +19134,7 @@ async function seedDefaultStaff() {
     role: "admin",
     isActive: true
   });
-  const hash22 = await import_bcryptjs.default.hash("Staff2026!", 10);
+  const hash22 = import_bcryptjs.default.hashSync("Staff2026!", 10);
   await createStaffAccount({
     username: "staff.central",
     passwordHash: hash22,
@@ -19161,7 +19161,7 @@ var appRouter = router({
     login: publicProcedure.input(external_exports.object({ username: external_exports.string(), password: external_exports.string() })).mutation(async ({ input }) => {
       const staff = await getStaffByUsername(input.username);
       if (!staff) throw new TRPCError3({ code: "UNAUTHORIZED", message: "Invalid credentials" });
-      const valid = await import_bcryptjs.default.compare(input.password, staff.passwordHash);
+      const valid = import_bcryptjs.default.compareSync(input.password, staff.passwordHash);
       if (!valid) throw new TRPCError3({ code: "UNAUTHORIZED", message: "Invalid credentials" });
       await updateStaffLastLogin(staff.id);
       const token = await signStaffToken(staff.id, staff.username, staff.role);
@@ -19205,7 +19205,7 @@ var appRouter = router({
       if (!payload || payload.role !== "admin") throw new TRPCError3({ code: "FORBIDDEN", message: "Admin access required" });
       const existing = await getStaffByUsername(input.username);
       if (existing) throw new TRPCError3({ code: "CONFLICT", message: "Username already taken" });
-      const passwordHash = await import_bcryptjs.default.hash(input.password, 10);
+      const passwordHash = import_bcryptjs.default.hashSync(input.password, 10);
       const id = await createStaffAccount({
         username: input.username,
         passwordHash,
@@ -19262,7 +19262,7 @@ var appRouter = router({
     })).mutation(async ({ input }) => {
       const payload = await verifyStaffToken(input.token);
       if (!payload || payload.role !== "admin") throw new TRPCError3({ code: "FORBIDDEN", message: "Admin access required" });
-      const passwordHash = await import_bcryptjs.default.hash(input.newPassword, 10);
+      const passwordHash = import_bcryptjs.default.hashSync(input.newPassword, 10);
       await updateStaffPassword(input.id, passwordHash);
       await createAuditLog({
         staffId: payload.staffId,
