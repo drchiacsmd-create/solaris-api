@@ -420,28 +420,28 @@ var require_bcrypt = __commonJS({
           return false;
         return wrong === 0;
       }
-      bcrypt2.compareSync = function(s, hash3) {
-        if (typeof s !== "string" || typeof hash3 !== "string")
-          throw Error("Illegal arguments: " + typeof s + ", " + typeof hash3);
-        if (hash3.length !== 60)
+      bcrypt2.compareSync = function(s, hash2) {
+        if (typeof s !== "string" || typeof hash2 !== "string")
+          throw Error("Illegal arguments: " + typeof s + ", " + typeof hash2);
+        if (hash2.length !== 60)
           return false;
-        return safeStringCompare(bcrypt2.hashSync(s, hash3.substr(0, hash3.length - 31)), hash3);
+        return safeStringCompare(bcrypt2.hashSync(s, hash2.substr(0, hash2.length - 31)), hash2);
       };
-      bcrypt2.compare = function(s, hash3, callback, progressCallback) {
+      bcrypt2.compare = function(s, hash2, callback, progressCallback) {
         function _async(callback2) {
-          if (typeof s !== "string" || typeof hash3 !== "string") {
-            nextTick(callback2.bind(this, Error("Illegal arguments: " + typeof s + ", " + typeof hash3)));
+          if (typeof s !== "string" || typeof hash2 !== "string") {
+            nextTick(callback2.bind(this, Error("Illegal arguments: " + typeof s + ", " + typeof hash2)));
             return;
           }
-          if (hash3.length !== 60) {
+          if (hash2.length !== 60) {
             nextTick(callback2.bind(this, null, false));
             return;
           }
-          bcrypt2.hash(s, hash3.substr(0, 29), function(err, comp) {
+          bcrypt2.hash(s, hash2.substr(0, 29), function(err, comp) {
             if (err)
               callback2(err);
             else
-              callback2(null, safeStringCompare(comp, hash3));
+              callback2(null, safeStringCompare(comp, hash2));
           }, progressCallback);
         }
         if (callback) {
@@ -459,17 +459,17 @@ var require_bcrypt = __commonJS({
             });
           });
       };
-      bcrypt2.getRounds = function(hash3) {
-        if (typeof hash3 !== "string")
-          throw Error("Illegal arguments: " + typeof hash3);
-        return parseInt(hash3.split("$")[2], 10);
+      bcrypt2.getRounds = function(hash2) {
+        if (typeof hash2 !== "string")
+          throw Error("Illegal arguments: " + typeof hash2);
+        return parseInt(hash2.split("$")[2], 10);
       };
-      bcrypt2.getSalt = function(hash3) {
-        if (typeof hash3 !== "string")
-          throw Error("Illegal arguments: " + typeof hash3);
-        if (hash3.length !== 60)
-          throw Error("Illegal hash length: " + hash3.length + " != 60");
-        return hash3.substring(0, 29);
+      bcrypt2.getSalt = function(hash2) {
+        if (typeof hash2 !== "string")
+          throw Error("Illegal arguments: " + typeof hash2);
+        if (hash2.length !== 60)
+          throw Error("Illegal hash length: " + hash2.length + " != 60");
+        return hash2.substring(0, 29);
       };
       var nextTick = typeof process !== "undefined" && process && typeof process.nextTick === "function" ? typeof setImmediate === "function" ? setImmediate : process.nextTick : setTimeout;
       function stringToBytes(str) {
@@ -4453,7 +4453,7 @@ function registerOAuthRoutes(app) {
 }
 
 // server/routers.ts
-var bcrypt = __toESM(require_bcryptjs());
+var import_bcryptjs = __toESM(require_bcryptjs());
 import { TRPCError as TRPCError3 } from "@trpc/server";
 import * as jose from "jose";
 
@@ -19126,15 +19126,15 @@ async function verifyStaffToken(token) {
 async function seedDefaultStaff() {
   const existing = await getStaffByUsername("admin");
   if (existing) return;
-  const hash3 = await bcrypt.hash("Solaris2026!", 10);
+  const hash2 = await import_bcryptjs.default.hash("Solaris2026!", 10);
   await createStaffAccount({
     username: "admin",
-    passwordHash: hash3,
+    passwordHash: hash2,
     fullName: "Admin (Solara Medical)",
     role: "admin",
     isActive: true
   });
-  const hash22 = await bcrypt.hash("Staff2026!", 10);
+  const hash22 = await import_bcryptjs.default.hash("Staff2026!", 10);
   await createStaffAccount({
     username: "staff.central",
     passwordHash: hash22,
@@ -19161,7 +19161,7 @@ var appRouter = router({
     login: publicProcedure.input(external_exports.object({ username: external_exports.string(), password: external_exports.string() })).mutation(async ({ input }) => {
       const staff = await getStaffByUsername(input.username);
       if (!staff) throw new TRPCError3({ code: "UNAUTHORIZED", message: "Invalid credentials" });
-      const valid = await bcrypt.compare(input.password, staff.passwordHash);
+      const valid = await import_bcryptjs.default.compare(input.password, staff.passwordHash);
       if (!valid) throw new TRPCError3({ code: "UNAUTHORIZED", message: "Invalid credentials" });
       await updateStaffLastLogin(staff.id);
       const token = await signStaffToken(staff.id, staff.username, staff.role);
@@ -19205,7 +19205,7 @@ var appRouter = router({
       if (!payload || payload.role !== "admin") throw new TRPCError3({ code: "FORBIDDEN", message: "Admin access required" });
       const existing = await getStaffByUsername(input.username);
       if (existing) throw new TRPCError3({ code: "CONFLICT", message: "Username already taken" });
-      const passwordHash = await bcrypt.hash(input.password, 10);
+      const passwordHash = await import_bcryptjs.default.hash(input.password, 10);
       const id = await createStaffAccount({
         username: input.username,
         passwordHash,
@@ -19262,7 +19262,7 @@ var appRouter = router({
     })).mutation(async ({ input }) => {
       const payload = await verifyStaffToken(input.token);
       if (!payload || payload.role !== "admin") throw new TRPCError3({ code: "FORBIDDEN", message: "Admin access required" });
-      const passwordHash = await bcrypt.hash(input.newPassword, 10);
+      const passwordHash = await import_bcryptjs.default.hash(input.newPassword, 10);
       await updateStaffPassword(input.id, passwordHash);
       await createAuditLog({
         staffId: payload.staffId,

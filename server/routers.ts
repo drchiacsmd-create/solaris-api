@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server";
-import * as bcrypt from "bcryptjs";
+import bcrypt from "bcryptjs";
 import * as jose from "jose";
 import { z } from "zod";
 import { COOKIE_NAME } from "../shared/const.js";
