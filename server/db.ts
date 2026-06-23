@@ -238,9 +238,34 @@ export async function getTransactionsByMember(memberId: number) {
 export async function getAllTransactions(limit = 100) {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(transactions)
+  const rows = await db
+    .select({
+      id: transactions.id,
+      memberId: transactions.memberId,
+      type: transactions.type,
+      packageId: transactions.packageId,
+      packageName: transactions.packageName,
+      rewardId: transactions.rewardId,
+      rewardName: transactions.rewardName,
+      amountPaid: transactions.amountPaid,
+      lumensEarned: transactions.lumensEarned,
+      lumensRedeemed: transactions.lumensRedeemed,
+      lumensRate: transactions.lumensRate,
+      isCorporateRate: transactions.isCorporateRate,
+      clinicId: transactions.clinicId,
+      clinicName: transactions.clinicName,
+      staffId: transactions.staffId,
+      notes: transactions.notes,
+      expiryDate: transactions.expiryDate,
+      createdAt: transactions.createdAt,
+      memberName: sql<string>`CONCAT(${members.firstName}, ' ', ${members.lastName})`,
+      memberNumber: members.memberNumber,
+    })
+    .from(transactions)
+    .leftJoin(members, eq(transactions.memberId, members.id))
     .orderBy(desc(transactions.createdAt))
     .limit(limit);
+  return rows;
 }
 
 export async function getTransactionStats() {
