@@ -236,6 +236,30 @@ export const appRouter = router({
         });
         return { success: true };
       }),
+
+    // Admin only: permanently delete a staff account
+    delete: publicProcedure
+      .input(z.object({
+        token: z.string(),
+        id: z.number(),
+      }))
+      .mutation(async ({ input }) => {
+        const payload = await verifyStaffToken(input.token);
+        if (!payload || payload.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+        if (payload.staffId === input.id) throw new TRPCError({ code: "BAD_REQUEST", message: "Cannot delete your own account" });
+        const target = await db.getStaffById(input.id);
+        await db.deleteStaffAccount(input.id);
+        await db.createAuditLog({
+          staffId: payload.staffId,
+          staffName: payload.username,
+          action: "staff.delete",
+          entityType: "staff",
+          entityId: String(input.id),
+          entityLabel: target?.fullName ?? String(input.id),
+          details: JSON.stringify({ username: target?.username, role: target?.role }),
+        });
+        return { ok: true };
+      }),
   }),
 
   // ── Members ─────────────────────────────────────────────────────────────────

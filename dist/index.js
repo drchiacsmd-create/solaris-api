@@ -2098,6 +2098,11 @@ async function updateStaffPassword(id, passwordHash) {
   if (!db) throw new Error("Database not available");
   await db.update(staffAccounts).set({ passwordHash }).where(eq(staffAccounts.id, id));
 }
+async function deleteStaffAccount(id) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(staffAccounts).where(eq(staffAccounts.id, id));
+}
 async function createCorporateGroup(data) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -17505,6 +17510,27 @@ var appRouter = router({
         details: JSON.stringify({ note: "Password reset by admin" })
       });
       return { success: true };
+    }),
+    // Admin only: permanently delete a staff account
+    delete: publicProcedure.input(external_exports.object({
+      token: external_exports.string(),
+      id: external_exports.number()
+    })).mutation(async ({ input }) => {
+      const payload = await verifyStaffToken(input.token);
+      if (!payload || payload.role !== "admin") throw new TRPCError3({ code: "FORBIDDEN", message: "Admin access required" });
+      if (payload.staffId === input.id) throw new TRPCError3({ code: "BAD_REQUEST", message: "Cannot delete your own account" });
+      const target = await getStaffById(input.id);
+      await deleteStaffAccount(input.id);
+      await createAuditLog({
+        staffId: payload.staffId,
+        staffName: payload.username,
+        action: "staff.delete",
+        entityType: "staff",
+        entityId: String(input.id),
+        entityLabel: target?.fullName ?? String(input.id),
+        details: JSON.stringify({ username: target?.username, role: target?.role })
+      });
+      return { ok: true };
     })
   }),
   // ── Members ─────────────────────────────────────────────────────────────────

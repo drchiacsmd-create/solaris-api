@@ -367,6 +367,12 @@ export async function updateStaffPassword(id: number, passwordHash: string) {
   await db.update(staffAccounts).set({ passwordHash }).where(eq(staffAccounts.id, id));
 }
 
+export async function deleteStaffAccount(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(staffAccounts).where(eq(staffAccounts.id, id));
+}
+
 // ── Corporate Groups ──────────────────────────────────────────────────────────
 export async function createCorporateGroup(data: InsertCorporateGroup): Promise<number> {
   const db = await getDb();
