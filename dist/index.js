@@ -5673,43 +5673,52 @@ var appRouter = router({
   vouchers: router({
     // Issue a single voucher (Admin + Manager)
     issue: publicProcedure.input(z2.object({
+      token: z2.string(),
       purchaserName: z2.string().optional(),
       purchaserEmail: z2.string().optional(),
       recipientName: z2.string().optional(),
       recipientEmail: z2.string().optional(),
       message: z2.string().optional(),
       notes: z2.string().optional()
-    })).mutation(async ({ input, ctx }) => {
-      const staff = await requireStaffRole(ctx, ["admin", "manager"]);
+    })).mutation(async ({ input }) => {
+      const payload = await verifyStaffToken(input.token);
+      if (!payload || !["admin", "manager"].includes(payload.role)) throw new TRPCError3({ code: "FORBIDDEN", message: "Admin or Manager access required" });
+      const { token: _t, ...rest } = input;
       return issueVoucher({
-        ...input,
-        issuedByStaffId: staff.staffId,
-        issuedByStaffName: staff.username
+        ...rest,
+        issuedByStaffId: payload.staffId,
+        issuedByStaffName: payload.username
       });
     }),
     // Batch issue vouchers (Admin + Manager)
     batchIssue: publicProcedure.input(z2.object({
+      token: z2.string(),
       count: z2.number().min(1).max(100),
       purchaserName: z2.string().optional(),
       purchaserEmail: z2.string().optional(),
       notes: z2.string().optional()
-    })).mutation(async ({ input, ctx }) => {
-      const staff = await requireStaffRole(ctx, ["admin", "manager"]);
+    })).mutation(async ({ input }) => {
+      const payload = await verifyStaffToken(input.token);
+      if (!payload || !["admin", "manager"].includes(payload.role)) throw new TRPCError3({ code: "FORBIDDEN", message: "Admin or Manager access required" });
+      const { token: _t, ...rest } = input;
       return batchIssueVouchers({
-        ...input,
-        issuedByStaffId: staff.staffId,
-        issuedByStaffName: staff.username
+        ...rest,
+        issuedByStaffId: payload.staffId,
+        issuedByStaffName: payload.username
       });
     }),
     // List all vouchers (Admin + Manager)
     list: publicProcedure.input(z2.object({
+      token: z2.string(),
       status: z2.enum(["unused", "redeemed", "expired", "cancelled"]).optional(),
       batchId: z2.string().optional(),
       limit: z2.number().default(100),
       offset: z2.number().default(0)
-    }).optional()).query(async ({ input, ctx }) => {
-      await requireStaffRole(ctx, ["admin", "manager"]);
-      return listVouchers(input ?? {});
+    })).query(async ({ input }) => {
+      const payload = await verifyStaffToken(input.token);
+      if (!payload || !["admin", "manager"].includes(payload.role)) throw new TRPCError3({ code: "FORBIDDEN", message: "Admin or Manager access required" });
+      const { token: _t, ...rest } = input;
+      return listVouchers(rest);
     }),
     // Validate a voucher code (public — used by mobile app before redemption)
     validate: publicProcedure.input(z2.object({ code: z2.string() })).query(async ({ input }) => {
@@ -5724,8 +5733,9 @@ var appRouter = router({
       return redeemVoucher(input.code, input.memberId, input.memberName);
     }),
     // Cancel a voucher (Admin only)
-    cancel: publicProcedure.input(z2.object({ id: z2.number() })).mutation(async ({ input, ctx }) => {
-      await requireStaffRole(ctx, ["admin"]);
+    cancel: publicProcedure.input(z2.object({ token: z2.string(), id: z2.number() })).mutation(async ({ input }) => {
+      const payload = await verifyStaffToken(input.token);
+      if (!payload || payload.role !== "admin") throw new TRPCError3({ code: "FORBIDDEN", message: "Admin access required" });
       await cancelVoucher(input.id);
       return { success: true };
     })
