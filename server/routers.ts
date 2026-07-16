@@ -67,25 +67,8 @@ async function seedDefaultStaff() {
   });
 }
 
-// Migrate bcrypt hashes to scrypt on startup
-async function migratePasswordHashes() {
-  const allStaff = await db.getAllStaffWithPasswords();
-  for (const s of allStaff) {
-    // bcrypt hashes start with $2a$ or $2b$; scrypt hashes are hex:hex format
-    if (s.passwordHash && s.passwordHash.startsWith("$2")) {
-      // We can't recover the original password, so reset to a known default
-      // admin -> Solaris2026!, staff.central -> Staff2026!, others -> Solaris2026!
-      let defaultPw = "Solaris2026!";
-      if (s.username === "staff.central") defaultPw = "Staff2026!";
-      const newHash = hashPassword(defaultPw);
-      await db.updateStaffPassword(s.id, newHash);
-    }
-  }
-}
-
 // Seed on startup
 seedDefaultStaff().catch(console.error);
-migratePasswordHashes().catch(console.error);
 
 // ── Router ────────────────────────────────────────────────────────────────────
 export const appRouter = router({

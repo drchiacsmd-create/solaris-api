@@ -4233,15 +4233,6 @@ async function updateStaffAccount(id, data) {
   if (!db) throw new Error("Database not available");
   await db.update(staffAccounts).set(data).where(eq(staffAccounts.id, id));
 }
-async function getAllStaffWithPasswords() {
-  const db = await getDb();
-  if (!db) return [];
-  return db.select({
-    id: staffAccounts.id,
-    username: staffAccounts.username,
-    passwordHash: staffAccounts.passwordHash
-  }).from(staffAccounts);
-}
 async function updateStaffPassword(id, passwordHash) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -5104,19 +5095,7 @@ async function seedDefaultStaff() {
     isActive: true
   });
 }
-async function migratePasswordHashes() {
-  const allStaff = await getAllStaffWithPasswords();
-  for (const s of allStaff) {
-    if (s.passwordHash && s.passwordHash.startsWith("$2")) {
-      let defaultPw = "Solaris2026!";
-      if (s.username === "staff.central") defaultPw = "Staff2026!";
-      const newHash = hashPassword(defaultPw);
-      await updateStaffPassword(s.id, newHash);
-    }
-  }
-}
 seedDefaultStaff().catch(console.error);
-migratePasswordHashes().catch(console.error);
 var appRouter = router({
   system: systemRouter,
   // ── Auth (Manus OAuth for mobile app) ──────────────────────────────────────
