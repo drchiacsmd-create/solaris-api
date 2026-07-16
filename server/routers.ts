@@ -107,9 +107,10 @@ export const appRouter = router({
       .input(z.object({ username: z.string(), password: z.string() }))
       .mutation(async ({ input }) => {
         const staff = await db.getStaffByUsername(input.username);
-        if (!staff) throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid credentials" });
+        if (!staff) throw new TRPCError({ code: "UNAUTHORIZED", message: "Username not found. Please check your login ID." });
+        if (!staff.isActive) throw new TRPCError({ code: "UNAUTHORIZED", message: "This account has been deactivated. Please contact your administrator." });
         const valid = verifyPassword(input.password, staff.passwordHash);
-        if (!valid) throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid credentials" });
+        if (!valid) throw new TRPCError({ code: "UNAUTHORIZED", message: "Incorrect password. Please try again." });
         await db.updateStaffLastLogin(staff.id);
         const token = await signStaffToken(staff.id, staff.username, staff.role);
         return {
