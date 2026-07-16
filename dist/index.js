@@ -3971,8 +3971,27 @@ var _db = null;
 async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
-      const client = src_default(process.env.DATABASE_URL, { ssl: "require" });
+      const client = src_default(process.env.DATABASE_URL, {
+        ssl: "require",
+        connect_timeout: 10,
+        // seconds to wait for initial connection
+        idle_timeout: 20,
+        // seconds before idle connections are closed
+        max_lifetime: 1800,
+        // 30 min max connection lifetime
+        max: 5,
+        // pool size
+        connection: {
+          application_name: "solaris-api"
+        }
+      });
       _db = drizzle(client);
+      client`SELECT 1`.then(() => {
+        console.log("[Database] Connection verified OK");
+      }).catch((err) => {
+        console.error("[Database] Connection test failed:", err);
+        _db = null;
+      });
     } catch (error) {
       console.warn("[Database] Failed to connect:", error);
       _db = null;
