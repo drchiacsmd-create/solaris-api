@@ -18,6 +18,7 @@ export const txTypeEnum = pgEnum("tx_type", ["earn", "redeem"]);
 export const staffRoleEnum = pgEnum("staff_role", ["admin", "manager", "clinic_assistant", "healthscreen_assistant"]);
 export const bookingStatusEnum = pgEnum("booking_status", ["pending", "confirmed", "completed", "cancelled"]);
 export const apptStatusEnum = pgEnum("appt_status", ["upcoming", "completed", "cancelled", "no-show"]);
+export const voucherStatusEnum = pgEnum("voucher_status", ["unused", "redeemed", "expired", "cancelled"]);
 
 // ── Users (Manus OAuth) ───────────────────────────────────────────────────────
 export const users = pgTable("users", {
@@ -192,3 +193,29 @@ export const auditLogs = pgTable("auditLogs", {
 
 export type AuditLog = typeof auditLogs.$inferSelect;
 export type InsertAuditLog = typeof auditLogs.$inferInsert;
+
+// ── Gift Vouchers ($100 cash credit vouchers) ─────────────────────────────────
+export const vouchers = pgTable("vouchers", {
+  id: serial("id").primaryKey(),
+  code: varchar("code", { length: 20 }).notNull().unique(),       // e.g. SLR-GIFT-A3X9
+  denomination: numeric("denomination", { precision: 10, scale: 2 }).default("100.00").notNull(),
+  status: voucherStatusEnum("status").default("unused").notNull(),
+  purchaserName: varchar("purchaserName", { length: 200 }),       // who bought it
+  purchaserEmail: varchar("purchaserEmail", { length: 320 }),
+  recipientName: varchar("recipientName", { length: 200 }),       // who it's for
+  recipientEmail: varchar("recipientEmail", { length: 320 }),
+  message: text("message"),                                       // personal message
+  batchId: varchar("batchId", { length: 50 }),                    // for batch-issued vouchers
+  issuedByStaffId: integer("issuedByStaffId"),                    // FK → staffAccounts.id
+  issuedByStaffName: varchar("issuedByStaffName", { length: 100 }),
+  redeemedByMemberId: integer("redeemedByMemberId"),              // FK → members.id
+  redeemedByMemberName: varchar("redeemedByMemberName", { length: 200 }),
+  redeemedAt: timestamp("redeemedAt"),
+  expiryDate: timestamp("expiryDate"),                            // 1 year from issue
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+});
+
+export type Voucher = typeof vouchers.$inferSelect;
+export type InsertVoucher = typeof vouchers.$inferInsert;

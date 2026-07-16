@@ -759,6 +759,83 @@ export const appRouter = router({
         return db.getAuditLogs(input);
       }),
   }),
-});
 
+  vouchers: router({
+    // Issue a single voucher (Admin + Manager)
+    issue: publicProcedure
+      .input(z.object({
+        purchaserName: z.string().optional(),
+        purchaserEmail: z.string().optional(),
+        recipientName: z.string().optional(),
+        recipientEmail: z.string().optional(),
+        message: z.string().optional(),
+        notes: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const staff = await requireStaffRole(ctx, ["admin", "manager"]);
+        return db.issueVoucher({
+          ...input,
+          issuedByStaffId: staff.staffId,
+          issuedByStaffName: staff.username,
+        });
+      }),
+
+    // Batch issue vouchers (Admin + Manager)
+    batchIssue: publicProcedure
+      .input(z.object({
+        count: z.number().min(1).max(100),
+        purchaserName: z.string().optional(),
+        purchaserEmail: z.string().optional(),
+        notes: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const staff = await requireStaffRole(ctx, ["admin", "manager"]);
+        return db.batchIssueVouchers({
+          ...input,
+          issuedByStaffId: staff.staffId,
+          issuedByStaffName: staff.username,
+        });
+      }),
+
+    // List all vouchers (Admin + Manager)
+    list: publicProcedure
+      .input(z.object({
+        status: z.enum(["unused", "redeemed", "expired", "cancelled"]).optional(),
+        batchId: z.string().optional(),
+        limit: z.number().default(100),
+        offset: z.number().default(0),
+      }).optional())
+      .query(async ({ input, ctx }) => {
+        await requireStaffRole(ctx, ["admin", "manager"]);
+        return db.listVouchers(input ?? {});
+      }),
+
+    // Validate a voucher code (public — used by mobile app before redemption)
+    validate: publicProcedure
+      .input(z.object({ code: z.string() }))
+      .query(async ({ input }) => {
+        const v = await db.getVoucherByCode(input.code);
+        if (!v) return { valid: false, error: "Invalid voucher code." };
+        if (v.status !== "unused") return { valid: false, error: v.status === "redeemed" ? "Already redeemed." : v.status === "expired" ? "Expired." : "Cancelled." };
+        if (v.expiryDate && new Date() > new Date(v.expiryDate)) return { valid: false, error: "Expired." };
+        return { valid: true, denomination: Number(v.denomination), recipientName: v.recipientName };
+      }),
+
+    // Redeem a voucher (authenticated member via mobile app)
+    redeem: publicProcedure
+      .input(z.object({ code: z.string(), memberId: z.number(), memberName: z.string() }))
+      .mutation(async ({ input }) => {
+        return db.redeemVoucher(input.code, input.memberId, input.memberName);
+      }),
+
+    // Cancel a voucher (Admin only)
+    cancel: publicProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        await requireStaffRole(ctx, ["admin"]);
+        await db.cancelVoucher(input.id);
+        return { success: true };
+      }),
+  }),
+});
 export type AppRouter = typeof appRouter;

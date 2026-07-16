@@ -20,6 +20,8 @@ import {
   InsertAppointment,
   auditLogs,
   InsertAuditLog,
+  vouchers,
+  InsertVoucher,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
@@ -610,4 +612,140 @@ export async function getAuditLogs(opts?: {
   ]);
 
   return { rows, total: countResult[0]?.count ?? 0 };
+}
+
+// ── Voucher helpers ───────────────────────────────────────────────────────────
+
+/** Generate a unique voucher code like SLR-GIFT-A3X9 */
+function generateVoucherCode(): string {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let code = "";
+  for (let i = 0; i < 8; i++) {
+    if (i === 4) code += "-";
+    code += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return `SLR-GIFT-${code}`;
+}
+
+export async function issueVoucher(data: {
+  purchaserName?: string;
+  purchaserEmail?: string;
+  recipientName?: string;
+  recipientEmail?: string;
+  message?: string;
+  batchId?: string;
+  issuedByStaffId: number;
+  issuedByStaffName: string;
+  notes?: string;
+}): Promise<{ id: number; code: string }> {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  // Generate unique code
+  let code = generateVoucherCode();
+  let attempts = 0;
+  while (attempts < 10) {
+    const existing = await db.select({ id: vouchers.id }).from(vouchers).where(eq(vouchers.code, code));
+    if (existing.length === 0) break;
+    code = generateVoucherCode();
+    attempts++;
+  }
+  const expiryDate = new Date();
+  expiryDate.setFullYear(expiryDate.getFullYear() + 1);
+  const result = await db.insert(vouchers).values({
+    code,
+    denomination: "100.00",
+    status: "unused",
+    purchaserName: data.purchaserName,
+    purchaserEmail: data.purchaserEmail,
+    recipientName: data.recipientName,
+    recipientEmail: data.recipientEmail,
+    message: data.message,
+    batchId: data.batchId,
+    issuedByStaffId: data.issuedByStaffId,
+    issuedByStaffName: data.issuedByStaffName,
+    expiryDate,
+    notes: data.notes,
+  });
+  const insertId = (result as any)[0]?.insertId ?? (result as any).insertId;
+  return { id: insertId, code };
+}
+
+export async function batchIssueVouchers(data: {
+  count: number;
+  purchaserName?: string;
+  purchaserEmail?: string;
+  issuedByStaffId: number;
+  issuedByStaffName: string;
+  notes?: string;
+}): Promise<{ batchId: string; codes: string[] }> {
+  const batchId = `BATCH-${Date.now()}`;
+  const codes: string[] = [];
+  for (let i = 0; i < data.count; i++) {
+    const v = await issueVoucher({ ...data, batchId });
+    codes.push(v.code);
+  }
+  return { batchId, codes };
+}
+
+export async function listVouchers(opts?: {
+  status?: "unused" | "redeemed" | "expired" | "cancelled";
+  batchId?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<{ rows: (typeof vouchers.$inferSelect)[]; total: number }> {
+  const db = await getDb();
+  if (!db) return { rows: [], total: 0 };
+  const limit = opts?.limit ?? 100;
+  const offset = opts?.offset ?? 0;
+  let query = db.select().from(vouchers) as any;
+  const conditions: any[] = [];
+  if (opts?.status) conditions.push(eq(vouchers.status, opts.status));
+  if (opts?.batchId) conditions.push(eq(vouchers.batchId, opts.batchId));
+  if (conditions.length > 0) query = query.where(and(...conditions));
+  const [rows, countResult] = await Promise.all([
+    query.orderBy(desc(vouchers.createdAt)).limit(limit).offset(offset),
+    db.select({ count: sql<number>`count(*)` }).from(vouchers)
+      .where(conditions.length > 0 ? and(...conditions) : undefined),
+  ]);
+  return { rows, total: countResult[0]?.count ?? 0 };
+}
+
+export async function getVoucherByCode(code: string): Promise<typeof vouchers.$inferSelect | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.select().from(vouchers).where(eq(vouchers.code, code.toUpperCase().trim()));
+  return result[0] ?? null;
+}
+
+export async function redeemVoucher(code: string, memberId: number, memberName: string): Promise<{
+  success: boolean;
+  denomination?: number;
+  error?: string;
+}> {
+  const db = await getDb();
+  if (!db) return { success: false, error: "DB unavailable" };
+  const voucher = await getVoucherByCode(code);
+  if (!voucher) return { success: false, error: "Invalid voucher code. Please check and try again." };
+  if (voucher.status === "redeemed") return { success: false, error: "This voucher has already been redeemed." };
+  if (voucher.status === "cancelled") return { success: false, error: "This voucher has been cancelled." };
+  if (voucher.status === "expired") return { success: false, error: "This voucher has expired." };
+  if (voucher.expiryDate && new Date() > new Date(voucher.expiryDate)) {
+    await db.update(vouchers).set({ status: "expired", updatedAt: new Date() }).where(eq(vouchers.id, voucher.id));
+    return { success: false, error: "This voucher has expired." };
+  }
+  // Mark as redeemed
+  await db.update(vouchers).set({
+    status: "redeemed",
+    redeemedByMemberId: memberId,
+    redeemedByMemberName: memberName,
+    redeemedAt: new Date(),
+    updatedAt: new Date(),
+  }).where(eq(vouchers.id, voucher.id));
+  return { success: true, denomination: Number(voucher.denomination) };
+}
+
+export async function cancelVoucher(id: number): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(vouchers).set({ status: "cancelled", updatedAt: new Date() }).where(eq(vouchers.id, id));
 }
