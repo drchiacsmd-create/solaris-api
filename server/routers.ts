@@ -67,8 +67,7 @@ async function seedDefaultStaff() {
   });
 }
 
-// Seed on startup
-seedDefaultStaff().catch(console.error);
+// Note: seedDefaultStaff() removed - admin account already exists in DB
 
 // ── Router ────────────────────────────────────────────────────────────────────
 export const appRouter = router({

@@ -5074,28 +5074,6 @@ async function verifyStaffToken(token) {
     return null;
   }
 }
-async function seedDefaultStaff() {
-  const existing = await getStaffByUsername("admin");
-  if (existing) return;
-  const hash = hashPassword("Solaris2026!");
-  await createStaffAccount({
-    username: "admin",
-    passwordHash: hash,
-    fullName: "Admin (Solara Medical)",
-    role: "admin",
-    isActive: true
-  });
-  const hash2 = hashPassword("Staff2026!");
-  await createStaffAccount({
-    username: "staff.central",
-    passwordHash: hash2,
-    fullName: "Reception \u2014 Central",
-    role: "clinic_assistant",
-    clinicId: "central",
-    isActive: true
-  });
-}
-seedDefaultStaff().catch(console.error);
 var appRouter = router({
   system: systemRouter,
   // ── Auth (Manus OAuth for mobile app) ──────────────────────────────────────
