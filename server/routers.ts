@@ -829,6 +829,16 @@ export const appRouter = router({
         await db.cancelVoucher(input.id);
         return { success: true };
       }),
+
+    // Delete a voucher record permanently (Admin only)
+    delete: publicProcedure
+      .input(z.object({ token: z.string(), id: z.number() }))
+      .mutation(async ({ input }) => {
+        const payload = await verifyStaffToken(input.token);
+        if (!payload || payload.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+        await db.deleteVoucher(input.id);
+        return { success: true };
+      }),
   }),
 });
 export type AppRouter = typeof appRouter;

@@ -201,6 +201,36 @@ async function migrate() {
     )
   `;
 
+  console.log("Creating vouchers table...");
+  await sql`
+    DO $$ BEGIN
+      CREATE TYPE voucher_status AS ENUM ('unused', 'redeemed', 'expired', 'cancelled');
+    EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+  `;
+  await sql`
+    CREATE TABLE IF NOT EXISTS "vouchers" (
+      "id" SERIAL PRIMARY KEY,
+      "code" VARCHAR(20) NOT NULL UNIQUE,
+      "denomination" NUMERIC(10,2) NOT NULL DEFAULT '100.00',
+      "status" voucher_status NOT NULL DEFAULT 'unused',
+      "purchaserName" VARCHAR(200),
+      "purchaserEmail" VARCHAR(320),
+      "recipientName" VARCHAR(200),
+      "recipientEmail" VARCHAR(320),
+      "message" TEXT,
+      "notes" TEXT,
+      "batchId" VARCHAR(50),
+      "issuedByStaffId" INTEGER,
+      "issuedByStaffName" VARCHAR(100),
+      "redeemedByMemberId" INTEGER,
+      "redeemedByMemberName" VARCHAR(200),
+      "redeemedAt" TIMESTAMP,
+      "expiryDate" TIMESTAMP,
+      "issuedAt" TIMESTAMP NOT NULL DEFAULT NOW(),
+      "updatedAt" TIMESTAMP NOT NULL DEFAULT NOW()
+    )
+  `;
+
   console.log("Seeding default admin account...");
   const hash = await bcrypt.hash("Solaris2026!", 12);
   await sql`

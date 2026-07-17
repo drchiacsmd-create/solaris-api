@@ -765,3 +765,9 @@ export async function cancelVoucher(id: number): Promise<void> {
   if (!db) return;
   await db.update(vouchers).set({ status: "cancelled", updatedAt: new Date() }).where(eq(vouchers.id, id));
 }
+
+export async function deleteVoucher(id: number): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(vouchers).where(eq(vouchers.id, id));
+}
